@@ -1,0 +1,10 @@
+{
+  "calculator": {
+    "description": "Evaluate simple arithmetic expressions. Input: {\"expr\": \"2+2\"}",
+    "input": {"type": "object", "properties": {"expr": {"type": "string"}}}
+  },
+  "echo": {
+    "description": "Return the provided text. Input: {\"text\": \"hello\"}",
+    "input": {"type": "object", "properties": {"text": {"type": "string"}}}
+  }
+}
