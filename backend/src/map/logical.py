@@ -19,15 +19,15 @@ from pydantic import BaseModel, Field
 
 
 class LogicalNode(BaseModel):
-    id: int = Field(..., description="节点ID")
+    id: str = Field(..., description="节点ID")
     name: str = Field(..., description="节点名称")
     type: str = Field(..., description="节点类型")
     description: str = Field("", description="节点描述信息", max_length=100)
 
 
 class LogicalEdge(BaseModel):
-    u_node_id: int = Field(..., description="起始节点ID")
-    v_node_id: int = Field(..., description="终止节点ID")
+    u_node_id: str = Field(..., description="起始节点ID")
+    v_node_id: str = Field(..., description="终止节点ID")
     name: str = Field("", description="边名称", max_length=50)
     cost: int = Field(..., description="边的费用")
 

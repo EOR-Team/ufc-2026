@@ -14,6 +14,7 @@
 # - u_node_id: 起始节点id
 # - v_node_id: 终止节点id
 # - name: 边名称
+# - cost: 边的费用
 #
 
 from pydantic import BaseModel, Field
@@ -25,9 +26,9 @@ class OriginNode(BaseModel):
     节点类，表示地图中的一个点
     """
 
-    # id: str = Field(..., description="节点id")
-    # x: int = Field(..., description="节点的x坐标")
-    # y: int = Field(..., description="节点的y坐标")
+    id: str = Field(..., description="节点id")
+    x: int = Field(..., description="节点的x坐标")
+    y: int = Field(..., description="节点的y坐标")
     type: Literal["main", "nav"] = Field(..., description="节点类型，主节点或导航节点")
     description: str = Field("", description="节点描述信息", max_length=100)
     name: str = Field("", description="节点名称", max_length=50)
@@ -38,10 +39,10 @@ class OriginEdge(BaseModel):
     边类，表示节点之间的连接
     """
 
-    # u_node_id: str = Field(..., description="起始节点id")
-    # v_node_id: str = Field(..., description="终止节点id")
-    # name: str = Field("", description="边名称", max_length=50)
-    pass
+    u_node_id: str = Field(..., description="起始节点id")
+    v_node_id: str = Field(..., description="终止节点id")
+    name: str = Field("", description="边名称", max_length=50)
+    cost: int = Field(..., description="边的费用")
 
 
 class OriginMap(BaseModel):
