@@ -1,6 +1,8 @@
 # config.py
 # 全局配置文件
+#
 
+import os
 from typing import Literal
 from pathlib import Path
 
@@ -22,3 +24,7 @@ OFFLINE_MODEL_TYPES = Literal[
 ]
 
 OFFLINE_MODEL: OFFLINE_MODEL_TYPES = "qwen2.5coder-1.5b"
+
+OFFLINE_MODEL_CTX_LEN = 8192
+
+OFFLINE_MODEL_THREADS = os.cpu_count() or 4

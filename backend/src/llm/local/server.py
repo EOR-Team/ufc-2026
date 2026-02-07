@@ -1,7 +1,8 @@
-# local.py
-# 启动本地 LLM 服务
+# llm/local/server.py
+# 本地 LLM 服务
 #
 
+import time
 import gson
 import subprocess
 
@@ -17,7 +18,7 @@ def _convert_model_name_to_filepath(model_name: str) -> str:
     """
 
     # load model mapping
-    with open(config.OFFLINE_MODEL_DIR / "binding.json", "r") as f:
+    with open(config.OFFLINE_MODEL_DIR / "mapping.json", "r") as f:
         model_mappings: dict[str, str] = gson.loads(f.read())
     
     filename = model_mappings.get(model_name, "")
@@ -43,11 +44,21 @@ def start_local_llm_server() -> bool:
         (config.BACKEND_ROOT_DIR / "venv" / "bin" / "python").as_posix(),
         "-m", "llama_cpp.server",
         "--model", model_filepath,
+        "--n_gpu_layers", "0",
+        "--n_ctx", str(config.OFFLINE_MODEL_CTX_LEN),
+        "--n_threads", str(config.OFFLINE_MODEL_THREADS),
+        "--verbose", "False",
         "--host", "0.0.0.0",
         "--port", "8080"
     ]
 
     _server_process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    time.sleep(5)  # 等待服务启动
+
+    if _server_process.poll() is not None:
+        _server_process = None
+        return False  # 启动失败
 
     return True
 

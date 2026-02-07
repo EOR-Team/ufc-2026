@@ -12,5 +12,8 @@ openai-agents
 # Environment variable management
 python-dotenv
 
+# Pydantic for data validation
+pydantic
+
 # Some tools
 gson

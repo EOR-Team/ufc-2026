@@ -1,8 +1,4 @@
-# =========================== global ignoring section   ============================
-
-# =========================== frontend ignoring section ===========================
-
-# =========================== backend ignoring section  ============================
+test.py
 
 # LLM model files
 *.gguf
