@@ -1,0 +1,13 @@
+# Requirements for the backend application
+
+# Web server
+fastapi
+
+# LLM server
+llama-cpp-python[all]
+
+# OpenAI Agent SDK
+openai-agents
+
+# Environment variable management
+python-dotenv
