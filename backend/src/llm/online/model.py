@@ -12,17 +12,17 @@ from agents import (
     OpenAIChatCompletionsModel,
 )
 
-from src import config
+from backend.src.config import general
 
 
 set_tracing_disabled(True)  # 禁用 tracing 功能
 
 online_client = AsyncOpenAI(
-    base_url = config.ONLINE_MODEL_HOST,
+    base_url = general.ONLINE_MODEL_HOST,
     api_key = os.getenv("API_KEY", ""),
 )
 
 online_model = OpenAIChatCompletionsModel(
-    model = config.ONLINE_MODEL,
+    model = general.DEFAULT_ONLINE_MODEL,
     openai_client = online_client,
 )

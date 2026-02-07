@@ -1,4 +1,4 @@
-# config.py
+# config/general.py
 # 全局配置文件
 #
 
@@ -23,7 +23,7 @@ OFFLINE_MODEL_TYPES = Literal[
     "qwen3-4b"
 ]
 
-OFFLINE_MODEL: OFFLINE_MODEL_TYPES = "qwen2.5coder-1.5b"
+DEFAULT_OFFLINE_MODEL: OFFLINE_MODEL_TYPES = "qwen2.5coder-1.5b"
 
 OFFLINE_MODEL_HOST = "http://localhost:8080/v1"
 
@@ -33,6 +33,11 @@ OFFLINE_MODEL_THREADS = os.cpu_count() or 4
 
 # === 在线 ===
 
-ONLINE_MODEL: Literal["deepseek-chat", "deepseek-reasoner"] = "deepseek-chat"
+ONLINE_MODEL_TYPES = Literal[
+    "deepseek-chat",
+    "deepseek-reasoner"
+]
+
+DEFAULT_ONLINE_MODEL: ONLINE_MODEL_TYPES = "deepseek-chat"
 
 ONLINE_MODEL_HOST = "https://api.deepseek.com/v1"

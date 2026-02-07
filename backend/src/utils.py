@@ -2,7 +2,7 @@
 # 一些工具
 
 import gson
-from src.config import OFFLINE_MODEL_TYPES, OFFLINE_MODEL_DIR
+from backend.src.config.general import OFFLINE_MODEL_TYPES, OFFLINE_MODEL_DIR
 
 
 def convert_model_name_to_path(model: OFFLINE_MODEL_TYPES) -> str:
