@@ -11,3 +11,6 @@ openai-agents
 
 # Environment variable management
 python-dotenv
+
+# Some tools
+gson

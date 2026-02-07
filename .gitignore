@@ -4,6 +4,9 @@
 
 # =========================== backend ignoring section  ============================
 
+# LLM model files
+*.gguf
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

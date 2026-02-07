@@ -1,0 +1,7 @@
+{
+    "qwen2.5-3b": "qwen2.5-3b-instruct-q4_k_m.gguf",
+    "qwen2.5coder-1.5b": "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf",
+    "qwen2.5coder-3b": "Qwen.Qwen2.5-Coder-3B.Q4_K_M.gguf",
+    "qwen3-1.7b": "Qwen3-1.7B-Q5_K_M.gguf",
+    "qwen3-4b": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf"
+}
