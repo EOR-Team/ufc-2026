@@ -24,6 +24,10 @@ class LogicalNode(BaseModel):
     type: str = Field(..., description="节点类型")
     description: str = Field("", description="节点描述信息", max_length=100)
 
+    
+    def __str__(self) -> str:
+        return f"LogicalNode(id={self.id}, name={self.name}, type={self.type}, description={self.description})"
+
 
 class LogicalEdge(BaseModel):
     u: str = Field(..., description="起始节点ID")
@@ -32,9 +36,25 @@ class LogicalEdge(BaseModel):
     cost: int | None = Field(None, description="边的费用")
 
 
+    def __str__(self) -> str:
+        return f"LogicalEdge(u={self.u}, v={self.v}, name={self.name}, cost={self.cost})"
+
+
 class LogicalMap(BaseModel):
     nodes: list[LogicalNode] = Field(..., description="逻辑地图中的节点列表")
     edges: list[LogicalEdge] = Field(..., description="逻辑地图中的边列表")
+
+    def __str__(self) -> str:
+        return (
+            f"LogicalMap(\n"
+            f"  nodes=[\n"
+            f"    " + ",\n    ".join(str(node) for node in self.nodes) + "\n"
+            f"  ],\n"
+            f"  edges=[\n"
+            f"    " + ",\n    ".join(str(edge) for edge in self.edges) + "\n"
+            f"  ]\n"
+            f")"
+        )
 
 
 __all__ = [

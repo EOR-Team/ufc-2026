@@ -32,6 +32,13 @@ class OriginNode(BaseModel):
     type: Literal["main", "nav"] = Field(..., description="节点类型，主节点或导航节点")
     description: str = Field("", description="节点描述信息", max_length=100)
     name: str = Field("", description="节点名称", max_length=50)
+    
+
+    def __str__(self) -> str:
+        return (
+            f"OriginNode(id={self.id}, x={self.x}, y={self.y}, "
+            f"type={self.type}, description={self.description}, name={self.name})"
+        )
 
 
 class OriginEdge(BaseModel):
@@ -45,6 +52,10 @@ class OriginEdge(BaseModel):
     cost: int | None = Field(None, description="边的费用") # 需要进行计算
 
 
+    def __str__(self) -> str:
+        return f"OriginEdge(u={self.u}, v={self.v}, name={self.name}, cost={self.cost})"
+
+
 class OriginMap(BaseModel):
     """
     原地图类，包含节点和边的信息
@@ -52,6 +63,19 @@ class OriginMap(BaseModel):
 
     nodes: list[OriginNode] = Field(..., description="地图中的节点列表")
     edges: list[OriginEdge] = Field(..., description="地图中的边列表")
+
+
+    def __str__(self) -> str:
+        return (
+            f"OriginMap(\n"
+            f"  nodes=[\n"
+            f"    " + ",\n    ".join(str(node) for node in self.nodes) + "\n"
+            f"  ],\n"
+            f"  edges=[\n"
+            f"    " + ",\n    ".join(str(edge) for edge in self.edges) + "\n"
+            f"  ]\n"
+            f")"
+        )
 
     
 __all__ = [
