@@ -10,7 +10,6 @@
 # `load_origin_map_from_json`: 从 JSON 字符串加载原地图数据
 # `convert_origin_to_physical_map`: 将原地图转换为物理地图
 # `convert_origin_to_logical_map`: 将原地图转换为逻辑地图
-# `show_map_info`: 显示地图的基本信息 ( to stdout )
 #
 # 提醒
 # 若地图数据有误，相关函数可能会抛出 AssertionError 或 KeyError
@@ -213,55 +212,164 @@ def convert_origin_to_physical_map(origin_map: OriginMap) -> PhysicalMap:
     return physical_map
 
 
+def get_cost_between_nodes(
+    map: OriginMap | PhysicalMap | LogicalMap,
+    u: str,
+    v: str
+) -> int | None:
+    """
+    在地图中查找**相邻两节点**之间的费用
+    Args:
+        map (OriginMap | PhysicalMap | LogicalMap): 地图
+        u (str): 起始节点ID
+        v (str): 终止节点ID
+    Returns:
+        int | None: 费用，若不存在则返回 None
+    """
+
+    # 查找边
+    for edge in map.edges:
+        if (edge.u == u and edge.v == v) or (edge.u == v and edge.v == u):
+            return edge.cost # 存在则返回费用
+
+    return None # 不存在
+
+
+def dfs_find_path(
+    map: OriginMap | PhysicalMap | LogicalMap,
+    current_node: str,
+    target_node: str,
+    visited: set[str],
+) -> list[str] | None:
+    """
+    使用深度优先搜索在地图中查找从 current_node 到 target_node 的路径（迭代版本）
+
+    Args:
+        map (OriginMap | PhysicalMap | LogicalMap): 地图
+        current_node (str): 当前节点ID
+        target_node (str): 目标节点ID
+        visited (set[str]): 已访问节点ID集合
+
+    Returns:
+        list[str] | None: 节点ID路径列表，若不存在则返回 None
+    """
+
+    # 使用栈存储 (当前节点, 路径) 元组
+    stack = [(current_node, [current_node])]
+    visited_copy = visited.copy()
+    visited_copy.add(current_node)
+
+    while stack:
+        node, path = stack.pop()
+        
+        if node == target_node:
+            return path  # 找到目标节点，返回路径
+
+        for edge in map.edges:
+            neighbor_node = None
+            if edge.u == node:
+                neighbor_node = edge.v
+            elif edge.v == node:
+                neighbor_node = edge.u
+            
+            if neighbor_node and neighbor_node not in visited_copy:
+                visited_copy.add(neighbor_node)
+                stack.append((neighbor_node, path + [neighbor_node]))
+
+    return None  # 不存在路径
+
+
 def convert_origin_to_logical_map(origin_map: OriginMap) -> LogicalMap:
     """
     将原地图转换为逻辑地图
+
+    Args:
+        origin_map (OriginMap): 原地图
+    Returns:
+        LogicalMap: 逻辑地图
     """
 
-    logical_map = LogicalMap(
-        nodes=[
-            LogicalNode(
-                id=node.id,
-                name=node.name,
-                type="main" if node.type == "main" else "nav",
-                description=node.description,
-            ) for node in origin_map.nodes
-        ],
-        edges=[
+    if not check_map_cost(origin_map):
+        calculate_all_cost(origin_map) # 计算所有边的费用
+
+    # 对 nav 节点过滤
+    nav_node_ids = set()
+    for node in origin_map.nodes:
+        if node.type == "nav":
+            nav_node_ids.add(node.id)
+    
+    logical_nodes = [
+        LogicalNode(
+            id=node.id,
+            name=node.name,
+            type=node.type,
+            description=node.description,
+        ) for node in origin_map.nodes if node.id not in nav_node_ids
+    ]
+
+    # 过滤特殊情况
+    if len(logical_nodes) == 0:
+        return LogicalMap(nodes=[], edges=[]) # 无主节点，返回空地图
+    if len(logical_nodes) == 1:
+        return LogicalMap(nodes=logical_nodes, edges=[]) # 仅有一个主节点，返回无边地图
+
+    # 使用双指针法构建边
+    index1 = 0
+    index2 = 1
+    logical_edges: list[LogicalEdge] = []
+
+    while index1 < len(logical_nodes) - 1:
+        u_node = logical_nodes[index1]
+        v_node = logical_nodes[index2]
+
+        # 使用 DFS 查找路径
+        path = dfs_find_path(
+            origin_map,
+            current_node=u_node.id,
+            target_node=v_node.id,
+            visited=set()
+        )
+
+        if path is None or len(path) < 2:
+            # 不存在路径或路径长度异常，跳过该边
+            index2 += 1
+            if index2 >= len(logical_nodes):
+                index1 += 1
+                index2 = index1 + 1
+            continue
+
+        # 计算路径总费用
+        total_cost = 0
+        for i in range(len(path) - 1):
+            cost = get_cost_between_nodes(origin_map, path[i], path[i + 1])
+            assert cost is not None, "路径中存在无效边"
+            total_cost += cost
+
+        logical_edges.append(
             LogicalEdge(
-                u=edge.u,
-                v=edge.v,
-                name=edge.name,
-                cost=edge.cost,
-            ) for edge in origin_map.edges
-        ],
+                u=u_node.id,
+                v=v_node.id,
+                # name="",
+                cost=total_cost,
+            )
+        )
+
+        # 移动指针
+        index2 += 1
+        if index2 >= len(logical_nodes):
+            index1 += 1
+            index2 = index1 + 1
+    
+    return LogicalMap(
+        nodes=logical_nodes,
+        edges=logical_edges,
     )
-
-    assert check_map_cost(logical_map), "逻辑地图边的费用计算错误" # 检查费用是否有效
-
-    return logical_map
-
-
-def show_map_info(map: OriginMap | PhysicalMap | LogicalMap) -> None:
-    """
-    显示地图的基本信息
-    """
-
-    print(f"节点数量: {len(map.nodes)}")
-    print(f"边数量: {len(map.edges)}")
-
-    for node in map.nodes:
-        print(f"节点 ID: {node.id}\n- 名称: {getattr(node, 'name', '')}\n- 坐标: ({getattr(node, 'x', 'N/A')}, {getattr(node, 'y', 'N/A')})\n- 类型: {getattr(node, 'type', 'N/A')}\n- 描述: {getattr(node, 'description', '')}\n")
-
-    for edge in map.edges:
-        print(f"边: {edge.u} -> {edge.v}\n- 名称: {edge.name}\n- 费用: {edge.cost}\n")
 
 
 __all__ = [
     "load_origin_map_from_json",
     "convert_origin_to_physical_map",
     "convert_origin_to_logical_map",
-    "show_map_info",
     "check_map_validity",
     "check_map_existance",
     "check_map_cost",

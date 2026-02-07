@@ -32,12 +32,12 @@ class LogicalNode(BaseModel):
 class LogicalEdge(BaseModel):
     u: str = Field(..., description="起始节点ID")
     v: str = Field(..., description="终止节点ID")
-    name: str = Field("", description="边名称", max_length=50)
+    # name: str = Field("", description="边名称", max_length=50)
     cost: int | None = Field(None, description="边的费用")
 
 
     def __str__(self) -> str:
-        return f"LogicalEdge(u={self.u}, v={self.v}, name={self.name}, cost={self.cost})"
+        return f"LogicalEdge(u={self.u}, v={self.v}, cost={self.cost})"
 
 
 class LogicalMap(BaseModel):
