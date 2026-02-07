@@ -25,6 +25,14 @@ OFFLINE_MODEL_TYPES = Literal[
 
 OFFLINE_MODEL: OFFLINE_MODEL_TYPES = "qwen2.5coder-1.5b"
 
+OFFLINE_MODEL_HOST = "http://localhost:8080/v1"
+
 OFFLINE_MODEL_CTX_LEN = 8192
 
 OFFLINE_MODEL_THREADS = os.cpu_count() or 4
+
+# === 在线 ===
+
+ONLINE_MODEL: Literal["deepseek-chat", "deepseek-reasoner"] = "deepseek-chat"
+
+ONLINE_MODEL_HOST = "https://api.deepseek.com/v1"

@@ -8,10 +8,13 @@ from agents import (
     OpenAIChatCompletionsModel,
 )
 
+from src import config
+    
+
 set_tracing_disabled(True)  # 禁用 tracing 功能
 
 offline_client = AsyncOpenAI(
-    base_url = "http://localhost:8080/v1",
+    base_url = config.OFFLINE_MODEL_HOST,
     api_key = "sk-xxx", # LocalLLM 服务不需要 API Key
 )
 
