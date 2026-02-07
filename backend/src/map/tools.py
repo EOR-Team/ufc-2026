@@ -16,6 +16,7 @@
 #
 
 import json
+import heapq
 
 from src.map.logical import *
 from src.map.physical import *
@@ -212,76 +213,66 @@ def convert_origin_to_physical_map(origin_map: OriginMap) -> PhysicalMap:
     return physical_map
 
 
-def get_cost_between_nodes(
-    map: OriginMap | PhysicalMap | LogicalMap,
-    u: str,
-    v: str
-) -> int | None:
+def dijkstra_search(
+    map_data: OriginMap | PhysicalMap,
+    start_node_id: str
+) -> dict[str, int]:
     """
-    在地图中查找**相邻两节点**之间的费用
+    Dijkstra 算法：计算从 start_node_id 到地图中所有其他节点的最短路径开销。
+    
     Args:
-        map (OriginMap | PhysicalMap | LogicalMap): 地图
-        u (str): 起始节点ID
-        v (str): 终止节点ID
-    Returns:
-        int | None: 费用，若不存在则返回 None
-    """
-
-    # 查找边
-    for edge in map.edges:
-        if (edge.u == u and edge.v == v) or (edge.u == v and edge.v == u):
-            return edge.cost # 存在则返回费用
-
-    return None # 不存在
-
-
-def dfs_find_path(
-    map: OriginMap | PhysicalMap | LogicalMap,
-    current_node: str,
-    target_node: str,
-    visited: set[str],
-) -> list[str] | None:
-    """
-    使用深度优先搜索在地图中查找从 current_node 到 target_node 的路径（迭代版本）
-
-    Args:
-        map (OriginMap | PhysicalMap | LogicalMap): 地图
-        current_node (str): 当前节点ID
-        target_node (str): 目标节点ID
-        visited (set[str]): 已访问节点ID集合
-
-    Returns:
-        list[str] | None: 节点ID路径列表，若不存在则返回 None
-    """
-
-    # 使用栈存储 (当前节点, 路径) 元组
-    stack = [(current_node, [current_node])]
-    visited_copy = visited.copy()
-    visited_copy.add(current_node)
-
-    while stack:
-        node, path = stack.pop()
+        map_data (OriginMap | PhysicalMap): 地图数据
+        start_node_id (str): 起始节点ID
         
-        if node == target_node:
-            return path  # 找到目标节点，返回路径
-
-        for edge in map.edges:
-            neighbor_node = None
-            if edge.u == node:
-                neighbor_node = edge.v
-            elif edge.v == node:
-                neighbor_node = edge.u
+    Returns:
+        dict[str, int]: 包含从起点到各个可达节点的最小 cost。
+                        例如: {'node_B': 10, 'node_C': 25}
+    """
+    
+    # 1. 构建邻接表 (Adjacency List) 用于加速查找
+    #    结构: { 'u_id': [('v_id', cost), ...] }
+    adj = {}
+    for node in map_data.nodes:
+        adj[node.id] = []
+    
+    for edge in map_data.edges:
+        # 确保 edge.cost 已计算
+        cost = edge.cost if edge.cost is not None else 1
+        # 无向图，双向添加
+        if edge.u in adj:
+            adj[edge.u].append((edge.v, cost))
+        if edge.v in adj:
+            adj[edge.v].append((edge.u, cost))
+    
+    # 2. 初始化
+    # 优先队列内容: (当前累计cost, 当前节点id)
+    pq = [(0, start_node_id)]
+    # 记录最短距离: {节点id: 最小cost}
+    distances = {start_node_id: 0}
+    
+    # 3. 开始扩散
+    while pq:
+        current_cost, current_node = heapq.heappop(pq)
+        
+        # 如果当前路径比已记录的短路径长，跳过 (剪枝)
+        if current_cost > distances.get(current_node, float('inf')):
+            continue
+        
+        # 遍历邻居
+        for neighbor, weight in adj.get(current_node, []):
+            distance = current_cost + weight
             
-            if neighbor_node and neighbor_node not in visited_copy:
-                visited_copy.add(neighbor_node)
-                stack.append((neighbor_node, path + [neighbor_node]))
-
-    return None  # 不存在路径
+            # 只有发现更短路径时才更新
+            if distance < distances.get(neighbor, float('inf')):
+                distances[neighbor] = distance
+                heapq.heappush(pq, (distance, neighbor))
+    
+    return distances
 
 
 def convert_origin_to_logical_map(origin_map: OriginMap) -> LogicalMap:
     """
-    将原地图转换为逻辑地图
+    将原地图转换为逻辑地图（使用 Dijkstra 算法计算最短路径）
 
     Args:
         origin_map (OriginMap): 原地图
@@ -290,14 +281,10 @@ def convert_origin_to_logical_map(origin_map: OriginMap) -> LogicalMap:
     """
 
     if not check_map_cost(origin_map):
-        calculate_all_cost(origin_map) # 计算所有边的费用
+        calculate_all_cost(origin_map)  # 计算所有边的费用
 
-    # 对 nav 节点过滤
-    nav_node_ids = set()
-    for node in origin_map.nodes:
-        if node.type == "nav":
-            nav_node_ids.add(node.id)
-    
+    # 1. 提取所有逻辑节点（主节点，排除导航节点）
+    nav_node_ids = {node.id for node in origin_map.nodes if node.type == "nav"}
     logical_nodes = [
         LogicalNode(
             id=node.id,
@@ -307,59 +294,36 @@ def convert_origin_to_logical_map(origin_map: OriginMap) -> LogicalMap:
         ) for node in origin_map.nodes if node.id not in nav_node_ids
     ]
 
-    # 过滤特殊情况
+    # 2. 处理特殊情况
     if len(logical_nodes) == 0:
-        return LogicalMap(nodes=[], edges=[]) # 无主节点，返回空地图
+        return LogicalMap(nodes=[], edges=[])  # 无主节点，返回空地图
     if len(logical_nodes) == 1:
-        return LogicalMap(nodes=logical_nodes, edges=[]) # 仅有一个主节点，返回无边地图
+        return LogicalMap(nodes=logical_nodes, edges=[])  # 仅有一个主节点，返回无边地图
 
-    # 使用双指针法构建边
-    index1 = 0
-    index2 = 1
+    # 3. 【核心改进】使用 Dijkstra 构建逻辑边
     logical_edges: list[LogicalEdge] = []
 
-    while index1 < len(logical_nodes) - 1:
-        u_node = logical_nodes[index1]
-        v_node = logical_nodes[index2]
+    # 遍历每一个主节点作为起点
+    for start_node in logical_nodes:
+        # 跑一次 Dijkstra，得到 start_node 到全图所有点的最短距离
+        all_distances = dijkstra_search(origin_map, start_node.id)
 
-        # 使用 DFS 查找路径
-        path = dfs_find_path(
-            origin_map,
-            current_node=u_node.id,
-            target_node=v_node.id,
-            visited=set()
-        )
+        # 遍历其他主节点作为终点
+        for end_node in logical_nodes:
+            if start_node.id == end_node.id:
+                continue
 
-        if path is None or len(path) < 2:
-            # 不存在路径或路径长度异常，跳过该边
-            index2 += 1
-            if index2 >= len(logical_nodes):
-                index1 += 1
-                index2 = index1 + 1
-            continue
+            # 检查是否可达
+            if end_node.id in all_distances:
+                cost = all_distances[end_node.id]
+                logical_edges.append(
+                    LogicalEdge(
+                        u=start_node.id,
+                        v=end_node.id,
+                        cost=cost
+                    )
+                )
 
-        # 计算路径总费用
-        total_cost = 0
-        for i in range(len(path) - 1):
-            cost = get_cost_between_nodes(origin_map, path[i], path[i + 1])
-            assert cost is not None, "路径中存在无效边"
-            total_cost += cost
-
-        logical_edges.append(
-            LogicalEdge(
-                u=u_node.id,
-                v=v_node.id,
-                # name="",
-                cost=total_cost,
-            )
-        )
-
-        # 移动指针
-        index2 += 1
-        if index2 >= len(logical_nodes):
-            index1 += 1
-            index2 = index1 + 1
-    
     return LogicalMap(
         nodes=logical_nodes,
         edges=logical_edges,
@@ -375,4 +339,5 @@ __all__ = [
     "check_map_cost",
     "calculate_cost",
     "calculate_all_cost",
+    "dijkstra_search",
 ]
