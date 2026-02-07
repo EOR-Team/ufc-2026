@@ -1,6 +1,20 @@
 # map/tools.py
 # 地图相关工具函数
 #
+# 包含如下功能
+# `check_map_validity`: 检查地图数据是否有效
+# `check_map_existance`: 检查地图数据中节点和边是否存在
+# `check_map_cost`: 检查地图数据中 cost 是否有效
+# `calculate_cost`: 计算两节点之间的费用（曼哈顿距离）
+# `calculate_all_cost`: 计算地图中所有边的费用
+# `load_origin_map_from_json`: 从 JSON 字符串加载原地图数据
+# `convert_origin_to_physical_map`: 将原地图转换为物理地图
+# `convert_origin_to_logical_map`: 将原地图转换为逻辑地图
+# `show_map_info`: 显示地图的基本信息 ( to stdout )
+#
+# 提醒
+# 若地图数据有误，相关函数可能会抛出 AssertionError 或 KeyError
+#
 
 import json
 
@@ -9,13 +23,46 @@ from src.map.physical import *
 from src.map.origin import *
 
 
+def check_map_existance(map: OriginMap | PhysicalMap | LogicalMap) -> bool:
+    """
+    检查地图数据中节点和边是否存在
+    1. 节点列表或边列表为空 -> 无效
+    2. 边列表中存在指向不存在的节点 -> 无效
+
+    Args:
+        map (OriginMap | PhysicalMap | LogicalMap): 地图
+
+    Returns:
+        bool: 是否有效
+    """
+
+    #
+    if len(map.nodes) == 0 or len(map.edges) == 0:
+        # 节点或边列表为空
+        return False
+    
+    u_node_id_set = set(edge.u for edge in map.edges)
+    v_node_id_set = set(edge.v for edge in map.edges)
+    node_id_set = u_node_id_set.union(v_node_id_set) # 地图中所有边涉及的节点ID集合
+
+    for node in map.nodes:
+        if node.id in node_id_set:
+            node_id_set.remove(node.id) # 移除存在的节点ID
+    
+    if len(node_id_set) > 0:
+        # 存在指向不存在节点的边
+        return False
+    
+    return True
+
+
 def check_map_cost(map: OriginMap | PhysicalMap | LogicalMap) -> bool:
     """
     检查地图数据中 cost 是否有效
     若 存在 cost 为 None 或负值则视为无效
 
     Args:
-        map (OriginMap | PhysicalMap | LogicalMap): 地图数据
+        map (OriginMap | PhysicalMap | LogicalMap): 地图
 
     Returns:
         bool: 是否有效
@@ -25,6 +72,21 @@ def check_map_cost(map: OriginMap | PhysicalMap | LogicalMap) -> bool:
         if edge.cost is None or edge.cost < 0:
             return False
     return True
+
+
+def check_map_validity(map: OriginMap | PhysicalMap | LogicalMap) -> bool:
+    """
+    检查地图数据是否有效
+    包含节点和边是否存在及 cost 是否有效的检查
+
+    Args:
+        map (OriginMap | PhysicalMap | LogicalMap): 地图
+
+    Returns:
+        bool: 是否有效
+    """
+
+    return check_map_existance(map) and check_map_cost(map)
 
 
 def calculate_cost(a: tuple[int, int], b: tuple[int, int]) -> int:
@@ -200,4 +262,9 @@ __all__ = [
     "convert_origin_to_physical_map",
     "convert_origin_to_logical_map",
     "show_map_info",
+    "check_map_validity",
+    "check_map_existance",
+    "check_map_cost",
+    "calculate_cost",
+    "calculate_all_cost",
 ]
