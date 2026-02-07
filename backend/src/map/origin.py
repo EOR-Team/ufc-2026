@@ -11,8 +11,8 @@
 # - description: 节点描述信息
 # - name: 节点名称
 # 边 Edge
-# - u_node_id: 起始节点id
-# - v_node_id: 终止节点id
+# - u: 起始节点id
+# - v: 终止节点id
 # - name: 边名称
 # - cost: 边的费用
 #
@@ -39,10 +39,10 @@ class OriginEdge(BaseModel):
     边类，表示节点之间的连接
     """
 
-    u_node_id: str = Field(..., description="起始节点id")
-    v_node_id: str = Field(..., description="终止节点id")
+    u: str = Field(..., description="起始节点id")
+    v: str = Field(..., description="终止节点id")
     name: str = Field("", description="边名称", max_length=50)
-    cost: int = Field(..., description="边的费用")
+    cost: int | None = Field(None, description="边的费用") # 需要进行计算
 
 
 class OriginMap(BaseModel):

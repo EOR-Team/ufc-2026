@@ -9,8 +9,8 @@
 # - x: 节点x坐标
 # - y: 节点y坐标
 # 边 PhysicalEdge
-# - u_node_id: 起始节点id
-# - v_node_id: 终止节点id
+# - u: 起始节点id
+# - v: 终止节点id
 # - name: 边名称
 # - cost: 边的费用
 #
@@ -26,10 +26,10 @@ class PhysicalNode(BaseModel):
 
 
 class PhysicalEdge(BaseModel):
-    u_node_id: str = Field(..., description="起始节点ID")
-    v_node_id: str = Field(..., description="终止节点ID")
+    u: str = Field(..., description="起始节点ID")
+    v: str = Field(..., description="终止节点ID")
     name: str = Field("", description="边名称", max_length=50)
-    cost: int = Field(..., description="边的费用")
+    cost: int | None = Field(None, description="边的费用")
 
 
 class PhysicalMap(BaseModel):
