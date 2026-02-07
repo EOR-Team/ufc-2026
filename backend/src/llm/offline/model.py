@@ -1,11 +1,14 @@
-# llm/local/model.py
-# 自定义 Model
+# llm/offline/model.py
+# 本地 Model
 #
 
 from openai import AsyncOpenAI
 from agents import (
+    set_tracing_disabled,
     OpenAIChatCompletionsModel,
 )
+
+set_tracing_disabled(True)  # 禁用 tracing 功能
 
 offline_client = AsyncOpenAI(
     base_url = "http://localhost:8080/v1",
