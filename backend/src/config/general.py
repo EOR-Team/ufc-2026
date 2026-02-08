@@ -20,16 +20,20 @@ OFFLINE_MODEL_TYPES = Literal[
     "qwen2.5coder-1.5b",
     "qwen2.5coder-3b",
     "qwen3-1.7b",
-    "qwen3-4b"
+    "qwen3-4b",
+    "qwen3-embed-0.6b"
 ]
 
-DEFAULT_OFFLINE_MODEL: OFFLINE_MODEL_TYPES = "qwen2.5coder-1.5b"
+DEFAULT_OFFLINE_CHAT_MODEL: OFFLINE_MODEL_TYPES = "qwen2.5coder-1.5b"
+
+DEFAULT_OFFLINE_EMBED_MODEL: OFFLINE_MODEL_TYPES = "qwen3-embed-0.6b"
 
 OFFLINE_MODEL_HOST = "http://localhost:8080/v1"
 
 OFFLINE_MODEL_CTX_LEN = 8192
 
 OFFLINE_MODEL_THREADS = os.cpu_count() or 4
+
 
 # === 在线 ===
 
