@@ -1,8 +1,9 @@
 # utils.py
 # 一些工具
 
-import gson
-from backend.src.config.general import OFFLINE_MODEL_TYPES, OFFLINE_MODEL_DIR
+import os
+import json
+from src.config.general import OFFLINE_MODEL_TYPES, OFFLINE_MODEL_DIR
 
 
 def convert_model_name_to_path(model: OFFLINE_MODEL_TYPES) -> str:
@@ -17,7 +18,7 @@ def convert_model_name_to_path(model: OFFLINE_MODEL_TYPES) -> str:
     """
 
     with open(OFFLINE_MODEL_DIR / "mapping.json", "r", encoding="utf-8") as f:
-        model_mapping: dict[str, str] = gson.loads(f.read())
+        model_mapping: dict[str, str] = json.loads(f.read())
     
     if model not in model_mapping:
         return ""
@@ -26,3 +27,23 @@ def convert_model_name_to_path(model: OFFLINE_MODEL_TYPES) -> str:
     model_path = OFFLINE_MODEL_DIR / model_filename
 
     return model_path.resolve().as_posix()
+
+
+def remove_os_environ_proxies() -> None:
+    """
+    移除所有与代理相关的环境变量，防止 httpx 使用 SOCKS 代理时出现问题
+    必须在导入 agents 之前调用
+    """
+    proxy_vars = [
+        'http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY',
+        'all_proxy', 'ALL_PROXY',
+        'SOCKS_PROXY', 'socks_proxy',
+        'ftp_proxy', 'FTP_PROXY',
+        'no_proxy', 'NO_PROXY'
+    ]
+
+    for var in proxy_vars:
+        os.environ.pop(var, None)
+
+    # 设置显式空值以确保没有代理
+    os.environ['NO_PROXY'] = '*'

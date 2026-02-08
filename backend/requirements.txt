@@ -15,5 +15,9 @@ python-dotenv
 # Pydantic for data validation
 pydantic
 
+# Microsoft's GraphRAG
+graphrag
+litellm
+
 # Some tools
 gson
