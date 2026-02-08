@@ -1,7 +1,9 @@
 # llm/local/server.py
 # 本地 LLM 服务
 #
-
+'''
+注意，以下内容为ai生成，不保证能用
+'''
 import time
 import gson
 import subprocess
