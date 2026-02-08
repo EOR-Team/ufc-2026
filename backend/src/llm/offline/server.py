@@ -79,9 +79,11 @@ def start_local_chat_server() -> bool:
         (general.BACKEND_ROOT_DIR / "venv" / "bin" / "python").as_posix(),
         "-m", "llama_cpp.server",
         "--model", model_filepath,
+        "--model_alias", "default",
         "--n_gpu_layers", "0",
         "--n_ctx", str(general.OFFLINE_MODEL_CTX_LEN),
         "--n_threads", str(general.OFFLINE_MODEL_THREADS - 1), # 留一个线程给 Embedding 服务
+        # "--embedding", "False",
         "--verbose", "False",
         "--host", "0.0.0.0",
         "--port", "8080"
@@ -120,9 +122,11 @@ def start_local_embed_server() -> bool:
         (general.BACKEND_ROOT_DIR / "venv" / "bin" / "python").as_posix(),
         "-m", "llama_cpp.server",
         "--model", model_filepath,
+        "--model_alias", "default",
         "--n_gpu_layers", "0",
         "--n_ctx", str(general.OFFLINE_MODEL_CTX_LEN),
         "--n_threads", "1", # Embedding 服务只用一个线程
+        "--embedding", "True",
         "--verbose", "False",
         "--host", "0.0.0.0",
         "--port", "8081"

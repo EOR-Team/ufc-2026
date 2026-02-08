@@ -2,7 +2,7 @@
 # 全局配置文件
 #
 
-import os
+import multiprocessing
 from typing import Literal
 from pathlib import Path
 
@@ -32,7 +32,7 @@ OFFLINE_MODEL_HOST = "http://localhost:8080/v1"
 
 OFFLINE_MODEL_CTX_LEN = 8192
 
-OFFLINE_MODEL_THREADS = os.cpu_count() or 4
+OFFLINE_MODEL_THREADS = multiprocessing.cpu_count() or 4
 
 
 # === 在线 ===

@@ -17,6 +17,7 @@ pydantic
 
 # Microsoft's GraphRAG
 graphrag
+litellm
 
 # Some tools
 gson
