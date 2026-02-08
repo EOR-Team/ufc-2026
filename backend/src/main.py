@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.llm.offline import server
 from src import logger
+from src.utils import remove_os_environ_proxies
+remove_os_environ_proxies() # 移除环境变量中的代理设置，防止影响本地服务调用
 
 
 # 创建 FastAPI 应用
