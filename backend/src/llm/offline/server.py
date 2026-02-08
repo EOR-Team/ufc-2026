@@ -3,14 +3,47 @@
 #
 
 import time
-import gson
+import json
 import subprocess
+import threading
+from queue import Queue
 
 from src.config import general
+from src import logger
 
 
 _server_process_chat: subprocess.Popen | None = None
 _server_process_embed: subprocess.Popen | None = None
+_output_buffer_chat: Queue = Queue()
+_output_buffer_embed: Queue = Queue()
+
+
+def _capture_output(process: subprocess.Popen, buffer: Queue, server_name: str) -> None:
+    """
+    Capture stdout and stderr from a subprocess and store in a queue.
+    Runs in a background thread.
+    
+    Args:
+        process: The subprocess.Popen object
+        buffer: Queue to store output lines
+        server_name: Name of the server for logging purposes
+    """
+    try:
+        while True:
+            # Read from stdout
+            if process.stdout:
+                line = process.stdout.readline()
+                if line:
+                    decoded_line = line.decode('utf-8', errors='replace').strip()
+                    if decoded_line:
+                        buffer.put(("stdout", decoded_line))
+                        logger.debug(f"[{server_name}] {decoded_line}")
+            
+            # Check if process is still running
+            if process.poll() is not None:
+                break
+    except Exception as e:
+        logger.error(f"Error capturing output from {server_name}: {str(e)}")
 
 
 def _convert_model_name_to_filepath(model_name: str) -> str:
@@ -20,7 +53,7 @@ def _convert_model_name_to_filepath(model_name: str) -> str:
 
     # load model mapping
     with open(general.OFFLINE_MODEL_DIR / "mapping.json", "r") as f:
-        model_mappings: dict[str, str] = gson.loads(f.read())
+        model_mappings: dict[str, str] = json.loads(f.read())
     
     filename = model_mappings.get(model_name, "")
 
@@ -39,6 +72,7 @@ def start_local_chat_server() -> bool:
 
     model_filepath = _convert_model_name_to_filepath(general.DEFAULT_OFFLINE_CHAT_MODEL)
     if not model_filepath:
+        logger.error("聊天模型文件不存在")
         return False  # 模型文件不存在
 
     command = [
@@ -53,7 +87,11 @@ def start_local_chat_server() -> bool:
         "--port", "8080"
     ]
 
-    _server_process_chat = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    _server_process_chat = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    # Start thread to capture output
+    capture_thread = threading.Thread(target=_capture_output, args=(_server_process_chat, _output_buffer_chat, "Chat Server"), daemon=True)
+    capture_thread.start()
 
     time.sleep(5)  # 等待服务启动
 
@@ -75,6 +113,7 @@ def start_local_embed_server() -> bool:
 
     model_filepath = _convert_model_name_to_filepath(general.DEFAULT_OFFLINE_EMBED_MODEL)
     if not model_filepath:
+        logger.error("Embedding 模型文件不存在")
         return False  # 模型文件不存在
 
     command = [
@@ -89,7 +128,11 @@ def start_local_embed_server() -> bool:
         "--port", "8081"
     ]
 
-    _server_process_embed = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    _server_process_embed = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    # Start thread to capture output
+    capture_thread = threading.Thread(target=_capture_output, args=(_server_process_embed, _output_buffer_embed, "Embed Server"), daemon=True)
+    capture_thread.start()
 
     time.sleep(5)  # 等待服务启动
 
@@ -135,19 +178,13 @@ def start_local_llm_server() -> bool:
     启动本地 LLM 服务和 Embedding 服务
     """
 
-    print("Starting chat server...")
+    logger.info("Starting chat server...")
     chat_started = start_local_chat_server()
-    if not chat_started:
-        print("Failed to start chat server!!")
-        return False
 
-    print("Starting embed server...")
+    logger.info("Starting embed server...")
     embed_started = start_local_embed_server()
-    if not embed_started:
-        print("Failed to start embed server!!")
-        return False
 
-    return True
+    return chat_started and embed_started
 
 
 def stop_local_llm_server() -> bool:
@@ -155,15 +192,43 @@ def stop_local_llm_server() -> bool:
     停止本地 LLM 服务和 Embedding 服务
     """
 
-    print("Stopping chat server...")
+    logger.info("Stopping chat server...")
     chat_stopped = stop_local_chat_server()
-    print("Stopping embed server...")
+
+    logger.info("Stopping embed server...")
     embed_stopped = stop_local_embed_server()
 
     return chat_stopped and embed_stopped
 
 
+def check_local_chat_server_running() -> bool:
+    """
+    检查本地 LLM 服务是否在运行
+    """
+
+    global _server_process_chat
+    return _server_process_chat is not None and _server_process_chat.poll() is None
+
+
+def check_local_embed_server_running() -> bool:
+    """
+    检查本地 Embedding 服务是否在运行
+    """
+
+    global _server_process_embed
+    return _server_process_embed is not None and _server_process_embed.poll() is None
+
+
+def check_local_llm_server_running() -> bool:
+    """
+    检查本地 LLM 服务和 Embedding 服务是否在运行
+    """
+
+    return check_local_chat_server_running() and check_local_embed_server_running()
+
+
 __all__ = [
     "start_local_llm_server",
     "stop_local_llm_server",
+    "check_local_llm_server_running",
 ]
