@@ -45,5 +45,3 @@ ONLINE_MODEL_TYPES = Literal[
 DEFAULT_ONLINE_MODEL: ONLINE_MODEL_TYPES = "deepseek-chat"
 
 ONLINE_MODEL_HOST = "https://api.deepseek.com/v1"
-
-ONLINE_MODEL_API = ""
