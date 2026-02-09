@@ -1,5 +1,3 @@
-test.py
-
 # LLM model files
 *.gguf
 
