@@ -2,7 +2,7 @@
 
 written by **n1ghts4kura** on 2026/02/10 - 22:30
 
-| 目录 	| 2026/02/09 - 20:00 |
+| 目录 	| Links |
 |---	|---	|
 | 文件结构 | [File Structure](#file-structure) |
 | ---- 路由 | [Routing](#about-routing)  	|
@@ -263,7 +263,8 @@ agent_planner/
 >     # 这个我是真的不太明白背后的原理。你得自己查资料。我只是公式化的用了一下。
 > ```
 
-2. 在 `workflow.py` 文件中
+2. 在 `workflow.py` 文件中声明你的具体逻辑，将上面的各个 agent 底下的 `get_xxx()` 函数串联起来，形成一个完整的工作流 (workflow)。就像我那个旧项目干的一样。
+最后导出一个 `run_workflow()` 函数，这个函数会被路由调用，返回路由所需要的数据，这样就完成了一个完整的功能模块。
 
 ---
 
