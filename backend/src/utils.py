@@ -47,3 +47,19 @@ def remove_os_environ_proxies() -> None:
 
     # 设置显式空值以确保没有代理
     os.environ['NO_PROXY'] = '*'
+
+
+def load_file_to_str(file_path: str) -> str:
+    """
+    将文件内容加载为字符串
+
+    Args:
+        file_path (str): 文件路径
+
+    Returns:
+        str: 文件内容字符串
+    """
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    return content
