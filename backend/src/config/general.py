@@ -34,6 +34,9 @@ OFFLINE_MODEL_CTX_LEN = 4096
 
 OFFLINE_MODEL_THREADS = 4 # or more
 
+# 为本地 llama-cpp-python 服务设置一致的 API Key（如未开启鉴权，可保留占位符）
+OFFLINE_MODEL_API_KEY = "sk-xxx"
+
 
 # === 在线 ===
 

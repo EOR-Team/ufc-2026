@@ -19,7 +19,7 @@ set_tracing_disabled(True)  # 禁用 tracing 功能
 
 online_client = AsyncOpenAI(
     base_url = general.ONLINE_MODEL_HOST,
-    api_key = os.getenv("API-KEY"),
+    api_key = os.getenv("API_KEY"),
     timeout=30.0,
 )
 

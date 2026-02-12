@@ -87,6 +87,7 @@ def start_local_chat_server() -> bool:
         "--n_threads", str(general.OFFLINE_MODEL_THREADS - 1), # 留一个线程给 Embedding 服务
         # "--embedding", "False",
         "--verbose", "False",
+        "--api_key", general.OFFLINE_MODEL_API_KEY,
         "--host", "0.0.0.0",
         "--port", "8080"
     ]

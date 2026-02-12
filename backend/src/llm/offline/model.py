@@ -15,7 +15,7 @@ set_tracing_disabled(True)  # 禁用 tracing 功能
 
 offline_client = AsyncOpenAI(
     base_url = general.OFFLINE_MODEL_HOST,
-    api_key = "sk-xxx", # LocalLLM 服务不需要 API Key
+    api_key = general.OFFLINE_MODEL_API_KEY, # 与本地服务配置保持一致
 )
 
 offline_model = OpenAIChatCompletionsModel(

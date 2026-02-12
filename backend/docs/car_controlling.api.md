@@ -1,0 +1,128 @@
+# API Document of Car Controlling
+
+> **ATTENTION**:
+> The API method mentioned in this document is not exposed to the frontend.
+> It is only called by the backend server **INSIDE ROUTE FUNCTIONS** to *control the car*.
+
+**written by n1ghts4kura on 2026/02/11 - 20:00**
+
+---
+
+## Before Reading
+
+Please take a look for the existing map storage file `backend/assets/small1.map.json` to get a basic *impression* of how the map is structured.
+
+Also the code of map mechanism in `backend/src/map/`.
+
+> **NOTE**:
+> Currently(2026/02/11), i decide to use a different way to build and use the map, which means that *the existing map file and code* may be **OUTDATED**.
+But it's still worth reading. The new mechanism will not be too different from the existing one.
+
+---
+
+## Mechanism
+
+### 1: Building a ORIGIN MAP from file
+
+Before the car was able to navigate to the specific locations, we need a map to express where we are at currently, and where we want to go.
+
+So based on the tutorial [Map designing](https://github.com/EOR-Team/ufc-2026/wiki/%E8%AE%BE%E8%AE%A1-%E5%9C%B0%E5%9B%BE%E3%81%AE%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84), i created a map which consists of **Nodes** and **Edges**.
+
+Let's talk about what **Nodes** and **Edges** will do first.
+
+
+#### Nodes
+
+As you can see, **Nodes** storage 4 kinds of data:
+
+- `id`: ID is a **UNIQUE IDENTIFER** for LLM to distinguish differnent locations. 
+
+- `x` & `y`: The position of certain locations in the map.
+I build the *coordinate system* with settings location `surgery_clinic` as the zero point (0, 0). All of the coordinates are **integers**, which means **most of the locations** are in the same distance of each other. So at last, we may *paint* a *square map* in reality for cars to show off.
+> You may consider "why toilet is at (4, 3)". Don't worry. It means that toilets are farther. Yeah that's it, with no complex designing.
+
+- `type`: The type to distinguish different locations by their own usage.
+`type: nav` means that this location is **meaningless for users** because they are built for **easier navigation**, as it's easier for cars to go straight roads instead of bending roads. Just like roads and crossings in `Manhattan Community` are all in **90-degree angles**.
+`type: main` means that this location is **meaningful for users**, because they are the **DESTINATIONS** that user need to go. So they are called **TURNING POINTS** in the path.
+
+- `name` & `description`: The description of locations to make LLM know what the location is and what the location do, so on.
+
+#### Edges
+
+**Edges** describes how all the nodes designed above are **connected** in the map.
+
+As you can see, **Edges** storage 2 kinds of data:
+
+- `u` & `v`: One of the destinations. The reason why they are named `u` & `v` is that using these 2 letters *without any really meanings* to express **one short route** means that the route is **BIDIRECTIONAL**, which means that you can travel *from u to v* and also *from v to u*. If not designed like that instead of using `start` and `end`, it would cause a *semantic misunderstanding* that the route is **DIRECTIONAL**, which means that you can **ONLY** travel *from start to end*.
+
+- `name`: The name of a road.
+> Actually this is the most meaningless part of the map. I don't even know whether it will work better within this part. lol
+
+### 2: Compute COST between nodes for ORIGIN MAP
+
+Cost, is a variable that describes how hard can the process be travelling from A to B. It can be used in hard-code path-finding algorithms (**Dijkstra**) to generate the optimal path.
+
+To simplify the process, I just use the **Manhattan Distance** to calculate the cost between 2 main nodes, which is the sum of the **vertical distance difference** and the **horizontal distance difference**.
+
+After computing, we will store all the costs between every nodes into the ORIGIN MAP. So now, ORIGIN MAP is the most completed and detailed data structure that describes the whole map.
+
+### 3: Traslate TURNING POINTS to CONNECTED PATH
+
+LLM is expected to generate all the **TURNING POINTS** in the path the user will go, so the task of *Car Controlling API* will start with the **ANALYSIS of certain paths**.
+
+> Example:
+>
+> Now LLM thinks that user should go along this path:
+> *Entrance* -> *Registration Center* -> *Surgery Clinic* -> *Phramecy* -> *Payment Center* -> *Quit*
+> (I simplify the path by ignoring all the `type: nav` nodes here)
+>
+> And the **INITIAL INPUT** for *Car Controlling API* is these locations formatted like: (*currently*)
+> ```json
+> {
+>     "locations": ["entrance", "registration_center", "surgery_clinic", "phramecy", "payment_center", "quit"] 
+> }
+> ```
+> What *Car Controlling API* need to do is to **TRANSLATE** these locations into a path connected with the nav nodes (`type:nav`). Only in this way can we have a **CONNECTED PATH** with *crossings*.
+>
+
+So how can we do that?
+
+We can **traverse** the route consists of TURNING POINTS one by one generated by LLM, and for every 2 nearby TURNING POINTS elements, do **Dijkstra** algorithm to find the optimal path between them. After the traversal is done, we can **connect** all the paths between every 2 nearby TURNING POINTS **IN ORDER** together to get the final CONNECTED PATH.
+
+### 4: Generate Car Actions from CONNECTED PATH
+
+Through variable `x` and `y`, we can calculate the **ORIENTATION** and **DISTANCE** between every 2 nearby nodes, which is meaningful for the car to move (e.g., turn left, go straight 5 meters, turn right, and so on, most of which are turning 90 degrees).
+
+The expected so-called **Car Actions** may be like:
+
+```json
+{
+    "actions:": [
+        {"orientation": "STRAIGHT", "distance": 5},
+        {"orientation": "LEFT", "distance": 0},
+        {"orientation": "STRAIGHT", "distance": 10},
+        {"orientation": "RIGHT", "distance": 0}
+    ]
+}
+```
+
+Now the car is ready to move based on these detailed actions.
+
+### 5: Car Controlling
+
+Sorry. This part is still working by **ZWM** yet.
+
+I don't know what kind of protocol will be used to control the car.
+
+But here is some common views that I had discussed with ZWM:
+
+- **Protocal**: UART by using `pyserial` library in Python.
+But actually I haven't decided which hardware device will be used to connect. Maybe the **GPIO** pins existing on **RDKX5** board.
+
+- ...
+
+---
+
+## API Reference
+
+still working...

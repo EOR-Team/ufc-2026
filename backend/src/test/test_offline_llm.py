@@ -4,12 +4,8 @@ from agents import Agent, Runner, ModelSettings
 
 from src.config import general
 from src.llm.offline import *
-from src.map import load_origin_map_from_json
 
-with open(general.BACKEND_ROOT_DIR / "assets" / "small1.map.json", "r") as f:
-    map_json_str = f.read()
-
-map_data = load_origin_map_from_json(map_json_str)
+map_data = {}
 
 prompt = f"""
 <|im_start|>system
