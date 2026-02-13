@@ -87,7 +87,7 @@ agent = Agent(
     model_settings=ModelSettings(
         temperature=0.5
     ),
-    model = offline_model
+    model = offline_chat_model
 )
 
 async def main():

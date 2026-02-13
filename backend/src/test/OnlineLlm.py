@@ -6,13 +6,13 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))  # backend目录
 import asyncio
-from llm.online.model import online_model
+from llm.online.model import online_chat_model
 class OnlineAgent:
     def __init__(self,name = "",instructions = ""):
         self.agent = Agent(
             name = name,
             instructions = instructions,
-            model = online_model,
+            model = online_chat_model,
             tools = [],
         )
         self.is_running = False
