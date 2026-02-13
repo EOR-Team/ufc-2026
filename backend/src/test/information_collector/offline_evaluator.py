@@ -88,5 +88,4 @@ def run_all_tests():
     logger.info("╚" + "=" * 58 + "╝")
 
 if __name__ == "__main__":
-    logger.setup_file_logging("/home/n1ghts4kura/Desktop/ufc-2026/backend/logs")
     run_all_tests()
