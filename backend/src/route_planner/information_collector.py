@@ -25,8 +25,8 @@ route_planner/information_collector.py
 
 from agents import Agent, ModelSettings, Runner, RunResultStreaming
 
-from src.llm.online import online_model
-from src.llm.offline import offline_model
+from src.llm.online import online_chat_model
+from src.llm.offline import offline_chat_model
 
 
 information_collector_instructions = """
@@ -218,7 +218,7 @@ async def collect_information(
     information_collector_agent = Agent(
         name = "Patient Information Collector in Hospital Route Planner",
         instructions = information_collector_instructions,
-        model = online_model if use_online_model else offline_model,
+        model = online_chat_model if use_online_model else offline_chat_model,
         model_settings = ModelSettings(
             temperature = 0.7,
             max_tokens = 512,

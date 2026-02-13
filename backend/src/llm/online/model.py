@@ -23,10 +23,14 @@ online_client = AsyncOpenAI(
     timeout=30.0,
 )
 
-online_model = OpenAIChatCompletionsModel(
-    model = general.DEFAULT_ONLINE_MODEL,
+online_chat_model = OpenAIChatCompletionsModel(
+    model = general.ONLINE_CHAT_MODEL,
     openai_client = online_client,
 )
 
+online_reasoning_model = OpenAIChatCompletionsModel(
+    model = general.ONLINE_REASONING_MODEL,
+    openai_client = online_client,
+)
 
     
