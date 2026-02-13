@@ -5,6 +5,7 @@
 from typing import Literal
 from pathlib import Path
 
+
 # ========== 全局配置 ==========
 BACKEND_ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
 
