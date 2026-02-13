@@ -25,8 +25,8 @@ route_planner/information_collector.py
 
 from agents import Agent, ModelSettings, Runner
 
-from src.llm.online import online_chat_model
-from src.llm.offline.chat import offline_chat_model
+from src.llm.online import get_online_chat_model
+from src.llm.offline import get_offline_chat_model
 
 
 information_collector_instructions = """
@@ -209,7 +209,7 @@ async def collect_information_online(user_input: str) -> str:
     information_collector_agent = Agent(
         name = "Patient Information Collector in Hospital Route Planner",
         instructions = information_collector_instructions,
-        model = online_chat_model,
+        model = get_online_chat_model(),
         model_settings = ModelSettings(
             temperature = 0.7,
             max_tokens = 512,
@@ -236,12 +236,13 @@ def collector_information_offline(user_input: str) -> str:
         str: 收集到的信息摘要或需要补充的信息列表。
     """
     
-    response = offline_chat_model.create_chat_completion(
+    response = get_offline_chat_model().create_chat_completion(
         messages = [
             {"role": "system", "content": information_collector_instructions},
             {"role": "user", "content": information_collector_prompt.format(user_input)}
         ],
         response_format = {"type": "text"},
+        temperature = 0.7,
     )
 
     return str(response["choices"][0]["message"]["content"])
