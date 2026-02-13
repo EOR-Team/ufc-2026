@@ -1,12 +1,9 @@
-# test/information_collector/online_evaluator.py
-# Information collector agent streamed online evaluator
+# test/information_collector/offline_evaluator.py
+# Information collector agent offline evaluator using llama-cpp-python
 #
 
-import asyncio
-from openai.types.responses import ResponseTextDeltaEvent
-
 from src import logger
-from src.route_planner import information_collector as ic
+from src.route_planner.information_collector import collector_information_offline
 
 
 # =========================================================================
@@ -23,43 +20,49 @@ STREAMED_CASES = [
     ("多症状较完整", "我在住院部一楼，头晕和恶心持续了半天，程度中等，主要是头部和胃不舒服。"),
 ]
 
+def _sanitize_json_like(text: str) -> str:
+    """Remove markdown fences and XML-like tags; trim and normalize whitespace."""
+    t = text.strip()
+    # Remove code fences
+    t = t.replace("```json", "").replace("```", "")
+    # Remove <response> tags
+    t = t.replace("<response>", "").replace("</response>", "")
+    # Collapse excessive trailing whitespace per line
+    return "\n".join(line.rstrip() for line in t.splitlines())
 
-async def _consume_stream(user_input: str) -> str:
-    """Run collect_information and consume streamed delta events, returning concatenated text."""
-    result = await ic.collect_information(user_input, use_online_model=True)
-    output_chunks: list[str] = []
+
+def _collect_information(user_input: str) -> str:
+    """Call the offline information collector and return the result."""
     try:
-        async for event in result.stream_events():
-            if event.type == "raw_response_event" and isinstance(event.data, ResponseTextDeltaEvent):
-                delta = getattr(event.data, "delta", "")
-                if isinstance(delta, str) and delta:
-                    output_chunks.append(delta)
+        result = collector_information_offline(user_input)
+        return result
     except Exception as e:
-        logger.error(f"✗ Streaming consumption failed: {e}")
-    return "".join(output_chunks)
+        logger.error(f"✗ Information collection failed: {e}")
+        return ""
 
 
 # =========================================================================
 # Streamed agent run tests
 # =========================================================================
 
-def test_streamed_agent_outputs():
-    """Run streamed mode with preset Chinese inputs and log outputs"""
+def test_offline_agent_outputs():
+    """Run offline evaluator with preset Chinese inputs and log outputs"""
     logger.info("=" * 60)
-    logger.info("Testing streamed agent outputs")
+    logger.info("Testing offline agent outputs (information collector)")
     logger.info("=" * 60)
 
     for name, user_input in STREAMED_CASES:
         logger.info(f"[Case] {name}")
         try:
-            streamed_text = asyncio.run(_consume_stream(user_input))
-            if streamed_text:
-                logger.info("✓ Streamed text received")
-                logger.info(streamed_text)
+            result = _collect_information(user_input)
+            if result:
+                clean = _sanitize_json_like(result)
+                logger.info("✓ Response received")
+                logger.info(clean)
             else:
-                logger.warning("⚠ Stream produced no text; agent may have guardrailed or configuration may be missing")
+                logger.warning("⚠ No response produced; model may have guardrailed or configuration may be missing")
         except Exception as e:
-            logger.error(f"✗ Streamed run failed: {e}")
+            logger.error(f"✗ Offline evaluation failed: {e}")
         logger.info("")
 
 
@@ -68,19 +71,21 @@ def test_streamed_agent_outputs():
 # =========================================================================
 
 def run_all_tests():
-    """Run streamed evaluator"""
+    """Run offline information collector evaluator"""
     logger.info("╔" + "=" * 58 + "╗")
-    logger.info("║" + " " * 12 + "INFORMATION COLLECTOR ONLINE EVALUATOR" + " " * 6 + "║")
+    logger.info("║" + " " * 12 + "INFORMATION COLLECTOR OFFLINE EVALUATOR" + " " * 5 + "║")
     logger.info("╚" + "=" * 58 + "╝")
     logger.info("")
 
-    test_streamed_agent_outputs()
+    try:
+        logger.info("Testing offline information collector with llama-cpp-python...")
+        test_offline_agent_outputs()
+    except Exception as e:
+        logger.error(f"✗ Error during testing: {e}")
 
     logger.info("╔" + "=" * 58 + "╗")
     logger.info("║" + " " * 18 + "ALL TESTS COMPLETED" + " " * 21 + "║")
     logger.info("╚" + "=" * 58 + "╝")
 
-
 if __name__ == "__main__":
-    logger.setup_file_logging("/home/n1ghts4kura/Desktop/ufc-2026/backend/logs")
     run_all_tests()

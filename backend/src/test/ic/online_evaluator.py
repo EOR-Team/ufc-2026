@@ -1,5 +1,5 @@
-# test/information_collector/offline_evalutaor.py
-# Information collector agent streamed offline evaluator (structure mirrored)
+# test/information_collector/online_evaluator.py
+# Information collector agent streamed online evaluator
 #
 
 import asyncio
@@ -7,7 +7,6 @@ from openai.types.responses import ResponseTextDeltaEvent
 
 from src import logger
 from src.route_planner import information_collector as ic
-from src.llm.offline import server as offline_server
 
 
 # =========================================================================
@@ -24,20 +23,10 @@ STREAMED_CASES = [
     ("多症状较完整", "我在住院部一楼，头晕和恶心持续了半天，程度中等，主要是头部和胃不舒服。"),
 ]
 
-def _sanitize_json_like(text: str) -> str:
-    """Remove markdown fences and XML-like tags; trim and normalize whitespace."""
-    t = text.strip()
-    # Remove code fences
-    t = t.replace("```json", "").replace("```", "")
-    # Remove <response> tags
-    t = t.replace("<response>", "").replace("</response>", "")
-    # Collapse excessive trailing whitespace per line
-    return "\n".join(line.rstrip() for line in t.splitlines())
-
 
 async def _consume_stream(user_input: str) -> str:
     """Run collect_information and consume streamed delta events, returning concatenated text."""
-    result = await ic.collect_information(user_input, use_online_model=False)
+    result = await ic.collect_information_online(user_input, use_online_model=True)
     output_chunks: list[str] = []
     try:
         async for event in result.stream_events():
@@ -57,7 +46,7 @@ async def _consume_stream(user_input: str) -> str:
 def test_streamed_agent_outputs():
     """Run streamed mode with preset Chinese inputs and log outputs"""
     logger.info("=" * 60)
-    logger.info("Testing streamed agent outputs (offline evaluator)")
+    logger.info("Testing streamed agent outputs")
     logger.info("=" * 60)
 
     for name, user_input in STREAMED_CASES:
@@ -65,9 +54,8 @@ def test_streamed_agent_outputs():
         try:
             streamed_text = asyncio.run(_consume_stream(user_input))
             if streamed_text:
-                clean = _sanitize_json_like(streamed_text)
                 logger.info("✓ Streamed text received")
-                logger.info(clean)
+                logger.info(streamed_text)
             else:
                 logger.warning("⚠ Stream produced no text; agent may have guardrailed or configuration may be missing")
         except Exception as e:
@@ -80,37 +68,18 @@ def test_streamed_agent_outputs():
 # =========================================================================
 
 def run_all_tests():
-    """Run streamed evaluator (offline variant)"""
+    """Run streamed evaluator"""
     logger.info("╔" + "=" * 58 + "╗")
-    logger.info("║" + " " * 12 + "INFORMATION COLLECTOR OFFLINE EVALUATOR" + " " * 5 + "║")
+    logger.info("║" + " " * 12 + "INFORMATION COLLECTOR ONLINE EVALUATOR" + " " * 6 + "║")
     logger.info("╚" + "=" * 58 + "╝")
     logger.info("")
 
-    # Ensure local LLM server is running
-    try:
-        if not offline_server.check_local_llm_server_running():
-            logger.info("Starting local LLM server for offline evaluator...")
-            started = offline_server.start_local_llm_server()
-            if started:
-                logger.info("✓ Local LLM server started")
-            else:
-                logger.error("✗ Failed to start local LLM server")
-    except Exception as e:
-        logger.error(f"✗ Error starting local LLM server: {e}")
-
-    try:
-        test_streamed_agent_outputs()
-    finally:
-        try:
-            logger.info("Stopping local LLM server...")
-            offline_server.stop_local_llm_server()
-            logger.info("✓ Local LLM server stopped")
-        except Exception as e:
-            logger.error(f"✗ Error stopping local LLM server: {e}")
+    test_streamed_agent_outputs()
 
     logger.info("╔" + "=" * 58 + "╗")
     logger.info("║" + " " * 18 + "ALL TESTS COMPLETED" + " " * 21 + "║")
     logger.info("╚" + "=" * 58 + "╝")
+
 
 if __name__ == "__main__":
     logger.setup_file_logging("/home/n1ghts4kura/Desktop/ufc-2026/backend/logs")
