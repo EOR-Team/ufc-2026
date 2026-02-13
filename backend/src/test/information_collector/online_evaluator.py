@@ -26,7 +26,7 @@ STREAMED_CASES = [
 
 async def _consume_stream(user_input: str) -> str:
     """Run collect_information and consume streamed delta events, returning concatenated text."""
-    result = await ic.collect_information(user_input, use_online_model=True)
+    result = await ic.collect_information_online(user_input, use_online_model=True)
     output_chunks: list[str] = []
     try:
         async for event in result.stream_events():

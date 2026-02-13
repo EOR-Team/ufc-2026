@@ -23,14 +23,13 @@ route_planner/information_collector.py
 - other_relevant_information: 其他与路径规划相关的信息列表
 """
 
-from agents import Agent, ModelSettings, Runner, RunResultStreaming
+from agents import Agent, ModelSettings, Runner
 
 from src.llm.online import online_chat_model
-from src.llm.offline import offline_chat_model
+from src.llm.offline.chat import offline_chat_model
 
 
 information_collector_instructions = """
-<|im_start|>system
 ## Background
 You are now working in a route planning system which is designed for a **CHINESE** HOSPITAL ENVIRONMENT.
 Your system's entire purpose is to plan routes for users based on their specific needs and constraints.
@@ -187,21 +186,14 @@ Assistant:
 1. You MUST ONLY output a single valid JSON object.
 2. Do NOT output markdown fences, code blocks, XML-like tags, or any extra text.
 3. The JSON keys and structure MUST follow the formats shown above; omit keys you cannot fill.
-<|im_end|>
 """
 
 information_collector_prompt = """
-<|im_start|>user
 User Input: {}
-<|im_end|>
-<|im_start|>assistant
 """
 
 
-async def collect_information(
-    user_input: str,
-    use_online_model: bool = True
-) -> RunResultStreaming:
+async def collect_information_online(user_input: str) -> str:
     """
     向用户收集信息，并确保收集了足够的信息来进行路径规划。
 
@@ -210,23 +202,46 @@ async def collect_information(
 
     Args:
         user_input (str): 用户输入的信息。
-        use_online_model (bool): 是否使用在线模型。默认为 True。
     Returns:
-        RunResultStreaming
+        str: 收集到的信息摘要或需要补充的信息列表。
     """
     
     information_collector_agent = Agent(
         name = "Patient Information Collector in Hospital Route Planner",
         instructions = information_collector_instructions,
-        model = online_chat_model if use_online_model else offline_chat_model,
+        model = online_chat_model,
         model_settings = ModelSettings(
             temperature = 0.7,
             max_tokens = 512,
         ),
     )
 
-    return Runner().run_streamed(
+    return (await Runner().run(
         starting_agent = information_collector_agent,
         input = information_collector_prompt.format(user_input),
         max_turns=2 # idk whether the agent will ask multiple rounds of questions
+    )).final_output
+
+
+def collector_information_offline(user_input: str) -> str:
+    """
+    向用户收集信息，并确保收集了足够的信息来进行路径规划。
+
+    如果信息不完整，返回需要补充的信息列表以及提问提示。
+    如果信息完整，返回收集到的信息摘要。
+
+    Args:
+        user_input (str): 用户输入的信息。
+    Returns:
+        str: 收集到的信息摘要或需要补充的信息列表。
+    """
+    
+    response = offline_chat_model.create_chat_completion(
+        messages = [
+            {"role": "system", "content": information_collector_instructions},
+            {"role": "user", "content": information_collector_prompt.format(user_input)}
+        ],
+        response_format = {"type": "text"},
     )
+
+    return str(response["choices"][0]["message"]["content"])

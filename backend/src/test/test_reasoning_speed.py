@@ -1,5 +1,5 @@
 import time
-from src.llm.offline import offline_reasoning_model
+from src.llm.offline.reason import offline_reasoning_model
 
 result = offline_reasoning_model.create_chat_completion(
     messages=[
