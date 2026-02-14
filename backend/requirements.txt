@@ -16,8 +16,8 @@ python-dotenv
 pydantic
 
 # Microsoft's GraphRAG
-graphrag
-litellm
+# graphrag
+# litellm
 
 # Some tools
 gson

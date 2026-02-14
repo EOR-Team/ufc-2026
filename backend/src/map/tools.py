@@ -1,343 +1,223 @@
 # map/tools.py
 # 地图相关工具函数
 #
-# 包含如下功能
-# `check_map_validity`: 检查地图数据是否有效
-# `check_map_existance`: 检查地图数据中节点和边是否存在
-# `check_map_cost`: 检查地图数据中 cost 是否有效
-# `calculate_cost`: 计算两节点之间的费用（曼哈顿距离）
-# `calculate_all_cost`: 计算地图中所有边的费用
-# `load_origin_map_from_json`: 从 JSON 字符串加载原地图数据
-# `convert_origin_to_physical_map`: 将原地图转换为物理地图
-# `convert_origin_to_logical_map`: 将原地图转换为逻辑地图
-#
-# 提醒
-# 若地图数据有误，相关函数可能会抛出 AssertionError 或 KeyError
-#
 
 import json
 import heapq
+from pydantic import ValidationError
 
-from src.map.logical import *
-from src.map.physical import *
-from src.map.origin import *
+from src.map.typedef import *
 
 
-def check_map_existance(map: OriginMap | PhysicalMap | LogicalMap) -> bool:
+def load_map_from_str(json_str: str) -> Map | None:
     """
-    检查地图数据中节点和边是否存在
-    1. 节点列表或边列表为空 -> 无效
-    2. 边列表中存在指向不存在的节点 -> 无效
+    从JSON字符串加载地图数据
 
     Args:
-        map (OriginMap | PhysicalMap | LogicalMap): 地图
+        json_str (str): 包含地图数据的JSON字符串
 
     Returns:
-        bool: 是否有效
+        Map: 加载的地图对象
+
+    Raises:
+        ValidationError: 如果JSON数据无效或不符合预期格式
     """
+    try:
+        data = json.loads(json_str)
+        return Map(**data)
 
-    #
-    if len(map.nodes) == 0 or len(map.edges) == 0:
-        # 节点或边列表为空
-        return False
-    
-    u_node_id_set = set(edge.u for edge in map.edges)
-    v_node_id_set = set(edge.v for edge in map.edges)
-    node_id_set = u_node_id_set.union(v_node_id_set) # 地图中所有边涉及的节点ID集合
+    except json.JSONDecodeError as e:
+        # raise ValueError(f"无效的JSON格式: {e}")
+        return None
 
-    for node in map.nodes:
-        if node.id in node_id_set:
-            node_id_set.remove(node.id) # 移除存在的节点ID
-    
-    if len(node_id_set) > 0:
-        # 存在指向不存在节点的边
-        return False
-    
-    return True
+    except ValidationError as e:
+        # raise ValueError(f"地图数据验证失败: {e}")
+        return None
 
 
-def check_map_cost(map: OriginMap | PhysicalMap | LogicalMap) -> bool:
+def compute_costs(map: Map) -> None:
     """
-    检查地图数据中 cost 是否有效
-    若 存在 cost 为 None 或负值则视为无效
+    计算地图中每条边的费用（cost）
+    TIPS:
+    修改变量本身
 
     Args:
-        map (OriginMap | PhysicalMap | LogicalMap): 地图
-
-    Returns:
-        bool: 是否有效
+        map (Map): 地图对象
     """
 
     for edge in map.edges:
-        if edge.cost is None or edge.cost < 0:
+        u_node = next((node for node in map.nodes if node.id == edge.u_node), None)
+        v_node = next((node for node in map.nodes if node.id == edge.v_node), None)
+
+        if u_node and v_node:
+            dx = u_node.x - v_node.x
+            dy = u_node.y - v_node.y
+
+            # Manhattan Distance
+            edge.cost = int(abs(dx) + abs(dy))
+
+
+def check_map_validity(map: Map) -> bool:
+    """
+    检查地图数据的有效性
+
+    Args:
+        map (Map): 地图对象
+
+    Returns:
+        bool: 如果地图数据有效则返回True，否则返回False
+    """
+
+    node_ids = {node.id for node in map.nodes}
+
+    for edge in map.edges:
+
+        # 1. 边的节点必须存在于节点列表中
+        if edge.u_node not in node_ids or edge.v_node not in node_ids:
             return False
+        
+        # 2. 边的费用必须为正整数 (假设费用已经计算过) 不能有 None Cost
+        if edge.cost is None or edge.cost <= 0:
+            return False
+
     return True
 
 
-def check_map_validity(map: OriginMap | PhysicalMap | LogicalMap) -> bool:
+def get_all_main_node_ids(map: Map) -> list[str] | None:
     """
-    检查地图数据是否有效
-    包含节点和边是否存在及 cost 是否有效的检查
+    获取地图中所有主节点的ID列表
 
     Args:
-        map (OriginMap | PhysicalMap | LogicalMap): 地图
+        map (Map): 地图对象
 
     Returns:
-        bool: 是否有效
+        list[str] | None: 主节点ID列表，如果没有主节点则返回None
     """
 
-    return check_map_existance(map) and check_map_cost(map)
+    main_node_ids = [node.id for node in map.nodes if node.type == "main"]
 
-
-def calculate_cost(a: tuple[int, int], b: tuple[int, int]) -> int:
-    """
-    计算两节点之间的费用（曼哈顿距离）
-    """
-
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
-
-def calculate_all_cost(map: OriginMap | PhysicalMap) -> None:
-    """
-    计算地图中所有边的费用
-
-    Args:
-        map (OriginMap | PhysicalMap): 地图
-    """
-
-    if isinstance(map, OriginMap):
-        _map = PhysicalMap(
-            nodes=[
-                PhysicalNode(
-                    id=node.id, 
-                    name=node.name,
-                    x=node.x,
-                    y=node.y
-                ) for node in map.nodes
-            ], # 转换节点
-            edges=[
-                PhysicalEdge(
-                    u=edge.u, 
-                    v=edge.v, 
-                    name=edge.name, 
-                    cost=None
-                ) for edge in map.edges
-            ], # 转换边 *注意：费用先设为 None*
-        )
-    else:
-        _map = map
-
-    # 缓存节点坐标便于查找
-    nodes_dict: dict[str, tuple[int, int]] = {}
-    for node in _map.nodes:
-        nodes_dict[node.id] = (node.x, node.y)
-    
-    # 计算每条边的费用
-    for edge in _map.edges:
-        u_node = nodes_dict[edge.u]
-        v_node = nodes_dict[edge.v]
-        edge.cost = calculate_cost(u_node, v_node)
-
-    # **应用回原map**
-    if isinstance(map, OriginMap):
-        map.edges = [
-            OriginEdge(
-                u=_map.edges[i].u,
-                v=_map.edges[i].v,
-                name=_map.edges[i].name,
-                cost=_map.edges[i].cost,
-            ) for i in range(len(_map.edges))
-        ]
-    else:
-        map.edges = _map.edges
-
-def load_origin_map_from_json(source_json: str) -> OriginMap:
-    """
-    从 JSON 字符串加载原地图数据
-    """
-
-    source_obj = json.loads(source_json)
-    origin_map = OriginMap(
-        nodes=[
-            OriginNode(
-                id=node_obj["id"],
-                name=node_obj.get("name", ""), # nav 节点名称可为空
-                x=node_obj["x"],
-                y=node_obj["y"],
-                type=node_obj["type"],
-                description=node_obj.get("description", ""),
-            ) for node_obj in source_obj["nodes"]
-        ],
-        edges=[
-            OriginEdge(
-                u=edge_obj["u"],
-                v=edge_obj["v"],
-                name=edge_obj.get("name", ""),
-                cost=None,
-            ) for edge_obj in source_obj["edges"]
-        ],
-    ) # **注意：仍未计算边的费用**
-    calculate_all_cost(origin_map) # 计算所有边的费用
-
-    assert check_map_cost(origin_map), "地图边的费用计算错误" # 检查费用是否有效
-
-    return origin_map
-
-
-def convert_origin_to_physical_map(origin_map: OriginMap) -> PhysicalMap:
-    """
-    将原地图转换为物理地图
-    """
-
-    physical_map = PhysicalMap(
-        nodes=[
-            PhysicalNode(
-                id=node.id,
-                name=node.name,
-                x=node.x,
-                y=node.y,
-            ) for node in origin_map.nodes
-        ],
-        edges=[
-            PhysicalEdge(
-                u=edge.u,
-                v=edge.v,
-                name=edge.name,
-                cost=edge.cost,
-            ) for edge in origin_map.edges
-        ],
-    )
-
-    assert check_map_cost(physical_map), "物理地图边的费用计算错误" # 检查费用是否有效
-
-    return physical_map
+    return main_node_ids if main_node_ids else None
 
 
 def dijkstra_search(
-    map_data: OriginMap | PhysicalMap,
-    start_node_id: str
-) -> dict[str, int]:
+    start_node_id: str,
+    end_node_id: str,
+    map: Map
+) -> list[str] | None:
     """
-    Dijkstra 算法：计算从 start_node_id 到地图中所有其他节点的最短路径开销。
-    
+    使用Dijkstra算法在地图中查找从起始节点到结束节点的最短路径
+
     Args:
-        map_data (OriginMap | PhysicalMap): 地图数据
         start_node_id (str): 起始节点ID
-        
+        end_node_id (str): 结束节点ID
+        map (Map): 地图对象
+
     Returns:
-        dict[str, int]: 包含从起点到各个可达节点的最小 cost。
-                        例如: {'node_B': 10, 'node_C': 25}
+        list[str] | None: 最短路径上的节点ID列表，如果没有路径则返回None
     """
-    
-    # 1. 构建邻接表 (Adjacency List) 用于加速查找
-    #    结构: { 'u_id': [('v_id', cost), ...] }
-    adj = {}
-    for node in map_data.nodes:
-        adj[node.id] = []
-    
-    for edge in map_data.edges:
-        # 确保 edge.cost 已计算
-        cost = edge.cost if edge.cost is not None else 1
-        # 无向图，双向添加
-        if edge.u in adj:
-            adj[edge.u].append((edge.v, cost))
-        if edge.v in adj:
-            adj[edge.v].append((edge.u, cost))
-    
-    # 2. 初始化
-    # 优先队列内容: (当前累计cost, 当前节点id)
-    pq = [(0, start_node_id)]
-    # 记录最短距离: {节点id: 最小cost}
-    distances = {start_node_id: 0}
-    
-    # 3. 开始扩散
-    while pq:
-        current_cost, current_node = heapq.heappop(pq)
-        
-        # 如果当前路径比已记录的短路径长，跳过 (剪枝)
-        if current_cost > distances.get(current_node, float('inf')):
+
+    # 构建邻接表
+    adjacency_list = {}
+    for edge in map.edges:
+        adjacency_list.setdefault(edge.u_node, []).append((edge.v_node, edge.cost))
+        adjacency_list.setdefault(edge.v_node, []).append((edge.u_node, edge.cost))
+
+    # 初始化Dijkstra算法的数据结构
+    min_heap = [(0, start_node_id)]  # (累计费用, 节点ID)
+    distances = {node.id: float("inf") for node in map.nodes}
+    distances[start_node_id] = 0
+    previous_nodes: dict[str, str | None] = {node.id: None for node in map.nodes}
+
+    while min_heap:
+        current_distance, current_node_id = heapq.heappop(min_heap)
+
+        # 如果到达终点，构建路径
+        if current_node_id == end_node_id:
+            path = []
+            while current_node_id is not None:
+                path.append(current_node_id)
+                current_node_id = previous_nodes[current_node_id]
+            return path[::-1]  # 反转路径
+
+        # 跳过已经找到更短路径的节点
+        if current_distance > distances[current_node_id]:
             continue
-        
-        # 遍历邻居
-        for neighbor, weight in adj.get(current_node, []):
-            distance = current_cost + weight
-            
-            # 只有发现更短路径时才更新
-            if distance < distances.get(neighbor, float('inf')):
-                distances[neighbor] = distance
-                heapq.heappush(pq, (distance, neighbor))
-    
-    return distances
+
+        # 遍历邻居节点
+        for neighbor_id, cost in adjacency_list.get(current_node_id, []):
+            distance = current_distance + cost
+
+            # 如果找到更短路径，更新数据结构
+            if distance < distances[neighbor_id]:
+                distances[neighbor_id] = distance
+                previous_nodes[neighbor_id] = current_node_id
+                heapq.heappush(min_heap, (distance, neighbor_id))
+
+    return None  # 如果没有路径则返回None
 
 
-def convert_origin_to_logical_map(origin_map: OriginMap) -> LogicalMap:
+def translate_graph_to_tree(map: Map, root_node_id: str) -> TreeNode | None:
     """
-    将原地图转换为逻辑地图（使用 Dijkstra 算法计算最短路径）
+    将地图图结构转换为树结构
 
     Args:
-        origin_map (OriginMap): 原地图
+        map (Map): 地图对象
+        root_node_id (str): 树的根节点ID
+
     Returns:
-        LogicalMap: 逻辑地图
+        TreeNode | None: 转换后的树的根节点 如果根节点不存在则返回None
     """
 
-    if not check_map_cost(origin_map):
-        calculate_all_cost(origin_map)  # 计算所有边的费用
+    node_dict = {node.id: node for node in map.nodes}
+    edge_dict = {}
+    for edge in map.edges:
+        edge_dict.setdefault(edge.u_node, []).append(edge.v_node)
+        edge_dict.setdefault(edge.v_node, []).append(edge.u_node)
 
-    # 1. 提取所有逻辑节点（主节点，排除导航节点）
-    nav_node_ids = {node.id for node in origin_map.nodes if node.type == "nav"}
-    logical_nodes = [
-        LogicalNode(
-            id=node.id,
-            name=node.name,
-            type=node.type,
-            description=node.description,
-        ) for node in origin_map.nodes if node.id not in nav_node_ids
-    ]
+    if root_node_id not in node_dict:
+        return None
 
-    # 2. 处理特殊情况
-    if len(logical_nodes) == 0:
-        return LogicalMap(nodes=[], edges=[])  # 无主节点，返回空地图
-    if len(logical_nodes) == 1:
-        return LogicalMap(nodes=logical_nodes, edges=[])  # 仅有一个主节点，返回无边地图
+    visited = set()
+    def build_tree(node_id: str) -> TreeNode:
+        visited.add(node_id)
+        tree_node = TreeNode(**node_dict[node_id].dict())
+        for neighbor_id in edge_dict.get(node_id, []):
+            if neighbor_id not in visited:
+                tree_node.children.append(build_tree(neighbor_id))
+        return tree_node
 
-    # 3. 【核心改进】使用 Dijkstra 构建逻辑边
-    logical_edges: list[LogicalEdge] = []
-
-    # 遍历每一个主节点作为起点
-    for start_node in logical_nodes:
-        # 跑一次 Dijkstra，得到 start_node 到全图所有点的最短距离
-        all_distances = dijkstra_search(origin_map, start_node.id)
-
-        # 遍历其他主节点作为终点
-        for end_node in logical_nodes:
-            if start_node.id == end_node.id:
-                continue
-
-            # 检查是否可达
-            if end_node.id in all_distances:
-                cost = all_distances[end_node.id]
-                logical_edges.append(
-                    LogicalEdge(
-                        u=start_node.id,
-                        v=end_node.id,
-                        cost=cost
-                    )
-                )
-
-    return LogicalMap(
-        nodes=logical_nodes,
-        edges=logical_edges,
-    )
+    return build_tree(root_node_id)
 
 
-__all__ = [
-    "load_origin_map_from_json",
-    "convert_origin_to_physical_map",
-    "convert_origin_to_logical_map",
-    "check_map_validity",
-    "check_map_existance",
-    "check_map_cost",
-    "calculate_cost",
-    "calculate_all_cost",
-    "dijkstra_search",
-]
+def validate_path(map: Map, path: list[str]) -> bool:
+    """
+    验证给定路径是否在地图中联通
+
+    Args:
+        map (Map): 地图对象
+        path (list[str]): 节点ID列表，表示路径
+    
+    Returns:
+        bool: 如果路径有效且联通则返回True，否则返回False
+    """
+
+    if not path or check_map_validity(map) is False:
+        # 路径为空或地图无效 则路径无效
+        return False
+    
+    root_node = translate_graph_to_tree(map, path[0])
+
+    if root_node is None:
+        # 根节点不存在 则路径无效
+        return False
+
+    current_node = root_node
+    for node_id in path[1:]:
+        # 在当前节点的子节点中查找下一个节点
+        next_node = next((child for child in current_node.children if child.id == node_id), None)
+        if next_node is None:
+            # 如果当前节点没有下一个节点 则路径无效
+            return False
+        current_node = next_node
+    
+    return True
