@@ -6,8 +6,8 @@ fastapi
 # LLM server
 llama-cpp-python[all]
 
-# OpenAI Agent SDK
-openai-agents
+# OpenAI
+openai
 
 # Environment variable management
 python-dotenv
