@@ -4,17 +4,13 @@ from openai import OpenAI
 
 from src.IntegratedSystem.integrated_system import IntegratedSystem
 from src.config import general
+from src.llm.online.client import get_online_client
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-client = OpenAI(
-    base_url=general.ONLINE_MODEL_HOST,
-    api_key=os.getenv("API-KEY"),
-    timeout=30.0,
-)
-
+client = get_online_client()
 system = IntegratedSystem()
 
 
