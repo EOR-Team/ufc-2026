@@ -35,3 +35,16 @@ class ConditionCollectorOutput(BaseModel):
     current_summary: CurrentSummary = Field(..., description="当前患者明确症状的总结")
 
     missing_fields: list[MissingField] = Field(..., description="患者症状描述中不合标准的字段 的相关信息列表")
+
+
+class LocationJudgeInput(BaseModel):
+    """
+    诊室判断器的输入
+    """
+
+    current_summary: CurrentSummary = Field(..., description="当前患者明确症状的总结")
+
+    location_id_to_info: dict[str, dict] = Field(..., description="地图中所有诊室的信息字典，键为诊室id，值为诊室的相关信息")
+
+
+LocationJudgeOutput = str # 诊室的id

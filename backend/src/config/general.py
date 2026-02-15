@@ -33,3 +33,7 @@ ONLINE_CHAT_MODEL: ONLINE_MODEL_TYPES = "deepseek-chat"
 ONLINE_REASONING_MODEL: ONLINE_MODEL_TYPES = "deepseek-reasoner"
 
 ONLINE_MODEL_HOST = "https://api.deepseek.com/v1"
+
+# ========== 图配置 ============
+
+MAP_PATH = BACKEND_ROOT_DIR / "assets" / "small1.map.json"

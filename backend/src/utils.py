@@ -3,6 +3,8 @@
 
 import os
 import subprocess
+from typing import Callable
+from llama_cpp import Llama
 
 
 def remove_os_environ_proxies() -> None:
@@ -36,3 +38,47 @@ def check_network_connection() -> bool:
         return process.wait() == 0
     except (subprocess.SubprocessError, FileNotFoundError):
         return False
+
+
+def build_logit_bias(
+    get_model_func: Callable[[], Llama],
+    string_to_probability: dict[str, float],
+    # ----- 分割线 -----
+    token_eos: float | None = None,
+    json_block: float | None = None,
+) -> Callable[[], dict[int, float]]:
+    """
+    根据指定模型 与 指定键值对 构建 logit bias 字典
+    用于调整 键 对应token 的输出概率
+    
+    Args:
+        get_model_func: 一个函数，返回一个 Llama 模型实例
+        string_to_probability: 键为你要调整输出概率的字符串，值为你要设置的概率调整值（正数提高概率，负数降低概率）
+        token_eos: 可选参数，如果提供，将对模型的结束符 token 应用这个概率调整值，进一步控制输出的完整性
+    Returns:
+        Callable[dict[int, float]]: 一个返回 logit_bias 字典的函数，该字典可以直接作为模型调用时的 logit_bias 参数传入
+    """
+
+    def wrapper() -> dict[int, float]:
+        model = get_model_func()
+
+        logit_bias_dict = {}
+        for string, prob in string_to_probability.items():
+            token_list = model.tokenize(string.encode())
+            for token in token_list: # 如果一个字符串对应多个 token，则对每个 token 都进行概率调整
+                logit_bias_dict[token] = prob
+
+        # 可选地调整结束符 token 的概率，鼓励模型输出更完整的内容，减少输出被截断的情况发生
+        if token_eos is not None:
+            logit_bias_dict[model.token_eos()] = token_eos
+
+        # 可选地调整 markdown json code block 相关 token 的概率，鼓励模型输出更纯净的 JSON 内容，减少输出被 markdown code block 包裹导致无法解析的情况发生
+        if json_block is not None:
+            markdown_json_block_begin_token_list = model.tokenize(b"```json") # 开始标记通常是 ```json
+            markdown_json_block_end_token_list = model.tokenize(b"```") # 结束标记通常是 ``` (这里也会匹配到其他 markdown code 需要注意到)
+            for token in markdown_json_block_begin_token_list + markdown_json_block_end_token_list:
+                logit_bias_dict[token] = json_block
+
+        return logit_bias_dict
+    
+    return wrapper

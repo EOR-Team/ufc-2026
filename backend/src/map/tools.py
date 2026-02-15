@@ -6,6 +6,7 @@ import json
 import heapq
 from pydantic import ValidationError
 
+from src.config.general import MAP_PATH
 from src.map.typedef import *
 
 
@@ -97,6 +98,22 @@ def get_all_main_node_ids(map: Map) -> list[str] | None:
     main_node_ids = [node.id for node in map.nodes if node.type == "main"]
 
     return main_node_ids if main_node_ids else None
+
+
+def get_all_main_node_id_to_name_and_description(map: Map) -> dict[str, dict[str, str]] | None:
+    """
+    获取地图中所有主节点的ID、名称和描述的字典
+
+    Args:
+        map (Map): 地图对象
+
+    Returns:
+        dict[str, dict[str, str]] | None: 主节点ID到名称和描述的字典，如果没有主节点则返回None
+    """
+
+    main_node_info = {node.id: {"name": node.name or "", "description": node.description or ""} for node in map.nodes if node.type == "main"}
+
+    return main_node_info if main_node_info else None
 
 
 def dijkstra_search(
@@ -221,3 +238,26 @@ def validate_path(map: Map, path: list[str]) -> bool:
         current_node = next_node
     
     return True
+
+
+# 直接在这里加载
+with open(MAP_PATH, "r", encoding="utf-8") as f:
+    map_json_str = f.read()
+    map = load_map_from_str(map_json_str)
+
+main_node_ids = get_all_main_node_ids(map) if map else None
+main_node_id_to_name_and_description = get_all_main_node_id_to_name_and_description(map) if map else None
+
+
+__all__ = [
+    "map",
+    "main_node_ids",
+    "main_node_id_to_name_and_description",
+    "load_map_from_str",
+    "compute_costs",
+    "check_map_validity",
+    "get_all_main_node_ids",
+    "dijkstra_search",
+    "translate_graph_to_tree",
+    "validate_path",
+]
