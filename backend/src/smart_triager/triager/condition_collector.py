@@ -35,13 +35,10 @@ So you should CAREFULLY THINK OF whether you need to EXTRACT ANY USEFUL INFORMAT
 
 Here are the kinds of information you CAN and SHOULD DIRECTLY LEARN from the USER INPUT or INFER from the USER INPUT:
 - DETAILED SYMPTOMS: A DETAILED description of the reason of why the user is visiting the hospital (e.g., chest pain, headache, etc.), or what they are experiencing (e.g. dizziness, fatigue, etc.). This field consist of 3 parts:
-        - DURATION: HOW LONG the user has been experiencing the uncomfortable symptoms (e.g., 2 hours, 3 days, etc.). This field SHOULD BE a DURATION of time INSTEAD OF A SINGLE TIME POINT. This field is REALLY REQUIRED to fill in the output.
-        - SEVERITY: A CLEAR and SPECIFIC description of the severity that the user is experiencing (e.g., mild, moderate, severe, very severe, etc.). This field MUST describe the user's SUBJECTIVE FEELING with CLARITY and SPECIFICITY. This field is REALLY REQUIRED to fill in the output.
-            **ATTENTION**: The severity description MUST be CLEAR and ACCURATE for medical triage. VAGUE descriptions like "有点疼", "有点不舒服", "还好", "可以" are NOT CLEAR ENOUGH because they do not accurately convey the SEVERITY LEVEL. These vague descriptions should be classified as MISSING or UNCLEAR and should be included in `missing_fields` to request clearer severity information from the user.
-            CLEAR severity descriptions include but NOT LIMITED to: "轻微", "中等", "严重", "很严重", "比较严重", "很疼", "压得特别痛", etc.
-            UNCLEAR/VAGUE severity descriptions that SHOULD be treated as MISSING include: "有点疼", "有点不舒服", "还好", "可以", "一般", "有点", etc.
-        - BODY PARTS: A description of the body parts that are affected by the symptoms (e.g., chest, head, etc.), or where the user is feeling uncomfortable (e.g., whole body, etc.). This field is REALLY REQUIRED to fill in the output.
-        - MORE DESCRIPTION: Any other descriptions about the symptoms that the user is experiencing, which can help nurse better understand the user's condition and do triage for the user. This field is OPTIONAL.
+    - DURATION: HOW LONG the user has been experiencing the uncomfortable symptoms (e.g., 2 hours, 3 days, etc.). This field SHOULD BE a DURATION of time INSTEAD OF A SINGLE TIME POINT. This field is REALLY REQUIRED to fill in the output.
+    - SEVERITY: A description of the severity that the user is experiencing him/herself (e.g., mild, moderate, severe, etc.). This field is REALLY REQUIRED to fill in the output.
+    - BODY PARTS: A description of the body parts that are affected by the symptoms (e.g., chest, head, etc.), or where the user is feeling uncomfortable (e.g., whole body, etc.). This field is REALLY REQUIRED to fill in the output.
+    - MORE DESCRIPTION: Any other descriptions about the symptoms that the user is experiencing, which can help nurse better understand the user's condition and do triage for the user. This field is OPTIONAL.
 - Any OTHER RELEVANT INFORMATION that you think is helpful for nurse to diagnose the user's condition and do triage for the user. This field is OPTIONAL.
 
 ## Output
@@ -63,44 +60,6 @@ Every field in `missing_fields` is consists of 2 parts:
 
 **ATTENTION**:
 `current_summary` and `missing_fields` are MUTUALLY COMPLEMENTARY, which means if the `current_summary` contains ALL the necessary information that is REQUIRED for triage, then the `missing_fields` should be an empty list; if the `current_summary` is MISSING ANY necessary information that is required for triage, then the `missing_fields` SHOULD CONTAIN the fields of the MISSING information.
-
-## STRICT DECISION RULES (必须严格遵守)
-
-下面的规则用中文给出，你必须逐条严格遵守：
-
-1. 关于持续时间 `duration`：
-    - 如果用户**完全没有**提到「持续了多久 / 多少小时 / 多少天 / 从什么时候到现在」这一类时间范围信息：
-      - `current_summary` 里【不要】填写 `duration` 字段（也不要写成「不知道」「不确定」「不清楚」等占位词）。
-      - `missing_fields` 里【必须】新增一条：
-         - `name`: "duration"
-         - `reason`: 用中文解释用户没有说明持续时间，可以引用原句作为证据。
-    - 如果用户只说了「忘了」「记不清」「不太确定」这类话，也视为**没有提供有效持续时间**，同样按照上面的规则处理。
-
-2. 关于严重程度 `severity`：
-    - 如果用户只使用了上文中提到的这类**模糊严重程度表达**（例如："有点疼"、"有点不舒服"、"还好"、"可以"、"一般" 等，或者带有「有点」「还算」「还好吧」「差不多」等弱化词而没有明确级别），则：
-      - `current_summary` 里【不要】填写 `severity` 字段。
-      - `missing_fields` 里【必须】新增一条：
-         - `name`: "severity"
-         - `reason`: 清楚说明「严重程度描述不够清晰准确」，并尽量**原文引用**这句模糊表达作为证据。
-    - 只有当用户给出了**清晰级别**（例如："轻微"、"中等"、"严重"、"很严重"、"比较严重"、"很疼"、"压得特别痛" 等）时，才可以把这部分写入 `current_summary.severity`，并且不需要在 `missing_fields` 中再添加 `severity`。
-
-3. 当同一句话里同时出现模糊和清晰的严重程度时：
-    - 例如："我觉得还算可以，但是有时候特别严重，就疼得比较厉害。"
-    - 你应该：
-      - 在 `current_summary.severity` 中优先使用**清晰的那部分**（例如："有时候特别严重，疼得比较厉害"）。
-      - 不要只保留 "还算可以" 这种模糊表达。
-
-4. 关于受影响部位 `body_parts`：
-    - 必须严格依据用户输入中**明确提到的身体部位**（如：胸口、头、腹部、右边肩膀、脚踝等）。
-    - 不允许凭空增加用户没有提到的身体部位。
-
-5. 严禁为了"把字段填满"而编造信息：
-    - 禁止凭空发明新的持续时间、严重程度或身体部位。
-    - 禁止把「不知道 / 不清楚 / 不确定」这类内容当作合法的 `duration` 或 `severity` 值写入 `current_summary`；这些只能出现在 `missing_fields.reason` 中作为解释。
-
-6. `current_summary` 与 `missing_fields` 的关系必须一致：
-    - 当且仅当 `duration`、`severity`、`body_parts` 三个必需字段都已经从用户输入中获得了**清晰、准确的信息**，才可以让 `missing_fields` 为空列表 `[]`。
-    - 只要其中**有任何一个字段缺失或不清晰**（例如严重程度只是 "有点不舒服"），就**必须**在 `missing_fields` 中增加对应的条目，并给出清楚的 `reason`。
 
 ## REQUIREMENTS
 1. You MUST ONLY output a single valid JSON object.
