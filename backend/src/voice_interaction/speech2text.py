@@ -6,8 +6,8 @@ import soundfile as sf
 class SpeechRecognizer:
     def __init__(
         self,
-        model_dir="./voice_interaction/sherpa-onnx-streaming-paraformer-bilingual-zh-en",
-        audio_path="./voice_interaction/sound.wav",
+        model_dir="./voice_interaction/models/sherpa-onnx-streaming-paraformer-bilingual-zh-en",
+        audio_path="./voice_interaction/input/sound.wav",
         sample_rate=16000,
     ):
         self.model_dir = model_dir

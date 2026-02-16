@@ -1,4 +1,3 @@
 sherpa-onnx
-edge-tts
 soundfile
 numpy
