@@ -16,17 +16,9 @@ class ConditionCollectorOutput(BaseModel):
 
     severity: str = Field(..., description="症状的严重程度")
 
+    description: str = Field(..., description="症状的具体描述")
+
     other_relevant_information: list[str] = Field(default_factory=list, description="其他与诊断患者病情和进行分诊相关的信息")
-
-
-class ClinicSelectorInput(BaseModel):
-    """
-    诊室选择器的输入
-    """
-
-    current_summary: ConditionCollectorOutput = Field(..., description="当前患者明确症状的总结")
-
-    location_id_to_info: dict[str, dict] = Field(..., description="地图中所有诊室的信息字典，键为诊室id，值为诊室的相关信息")
 
 
 class Requirement(BaseModel):

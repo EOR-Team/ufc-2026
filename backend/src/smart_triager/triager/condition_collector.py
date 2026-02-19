@@ -69,6 +69,7 @@ Output:
     "body_parts": "脚",
     "severity": "有点疼",
     "duration": "",
+    "description": "疼",
     "other_relevant_information": []
 }
 
@@ -79,6 +80,7 @@ Output:
     "body_parts": "头",
     "severity": "程度还算中等",
     "duration": "两天",
+    "description": "头疼",
     "other_relevant_information": []
 }
 
@@ -89,6 +91,7 @@ Output:
     "body_parts": "肚子",
     "severity": "很难受",
     "duration": "半个小时",
+    "description": "肚子疼",
     "other_relevant_information": []
 }
 
@@ -99,6 +102,7 @@ Output:
     "body_parts": "脚踝",
     "severity": "有点不舒服",
     "duration": "两三天",
+    "description": "脚踝不舒服",
     "other_relevant_information": [
         "两三天前扭伤过一次，但是很快就好了。现在又开始不舒服了。"
     ]
