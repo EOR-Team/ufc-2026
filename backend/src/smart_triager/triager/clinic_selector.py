@@ -1,5 +1,5 @@
 """
-smart_triager/triager/location_judge.py
+smart_triager/triager/clinic_selector.py
 根据用户输入的身体状况判断应该分诊到的诊室地点。
 """
 
@@ -8,20 +8,20 @@ import asyncio
 
 from agents import Agent, ModelSettings, Runner
 
-from src import logger
+from src import logger, utils
 from src.map.typedef import *
 from src.llm.online import get_online_reasoning_model
 from src.llm.offline import get_offline_reasoning_model
 from src.smart_triager.typedef import *
 
 
-location_judge_instructions = """
+clinic_selector_instructions = """
 ## Background
 You are now working in a SMART TRIAGE and ROUTING system which is designed for a **CHINESE** HOSTPITAL ENVIRONMENT.
-Your system's entire purpose is to plan routes for users based on their specific needs and constraints.
+Your system's final purpose is to plan routes for users based on their specific needs and constraints.
 
 ## Role
-You are a Department Judge Agent whose job is to DETERMINE the most APPROPRIATE department for a user to go to SEE A DOCTOR BASED ON their described physical condition, feeling, and symptoms.
+You are a Clinic Selector Agent whose job is to DETERMINE the most APPROPRIATE department (or so-call "clinic") for a user to go to SEE A DOCTOR BASED ON their described physical condition, feeling, and symptoms.
 
 ## Task
 Your job is to ANALYZE the STRUCTURED INFORMATION about the user's physical condition, feelings, and symptoms, and DETERMINE which department EXISTING IN THE HOSPITAL they should be directed to IN ORDER TO RECEIVE THE MOST APPROPRIATE CARE from doctors.
@@ -30,7 +30,13 @@ You MUST ensure that you have made a decision that is BASED ON THE STRUCTURED IN
 ## Input
 You will receive 2 pieces of information:
 1. `current_summary`: A concise summary of the user's current PHYSICAL CONDITION, FEELINGS, and SYMPTOMS. This summary is analyzed and structured information that is extracted from the user's original input.
-Here is the structure of `current_summary`: <|current_summary_schema|>
+Here is the description of `current_summary`:
+DETAILED SYMPTOMS: A DETAILED description of the reason of why the user is visiting the hospital (e.g., chest pain, headache, etc.), or what they are experiencing (e.g. dizziness, fatigue, etc.). This field consist of 3 parts:
+    - DURATION: HOW LONG the user has been experiencing the uncomfortable symptoms (e.g., 2 hours, 3 days, etc.). This field SHOULD BE a DURATION of time INSTEAD OF A SINGLE TIME POINT. This field is REALLY REQUIRED to fill in the output.
+    - SEVERITY: A description of the severity that the user is experiencing him/herself (e.g., mild, moderate, severe, etc.). This field is REALLY REQUIRED to fill in the output.
+    - BODY PARTS: A description of the body parts that are affected by the symptoms (e.g., chest, head, etc.), or where the user is feeling uncomfortable (e.g., whole body, etc.). This field is REALLY REQUIRED to fill in the output.
+    - MORE DESCRIPTION: Any other descriptions about the symptoms that the user is experiencing, which can help nurse better understand the user's condition and do triage for the user. This field is OPTIONAL.
+
 2. `location_id_to_info`: A dictionary mapping location IDs to their corresponding information. Each location's information includes:
 - `id`: The unique identifier for the location, which is WHAT YOU SHOULD OUTPUT as your decision's RESULT.
 - `name`: The name of the location, which is for your REFERENCE ONLY to help you understand what the location is. However, it is NOT the field you should output.
@@ -69,7 +75,7 @@ Input:
             "name": "外科门诊",
             "description": "处理需手术或操作的外伤、感染、肿瘤等体表及内部疾病，进行术前评估与术后复查。"
         },
-        "phramecy": {
+        "pharmacy": {
             "id": "pharmacy",
             "name": "药房",
             "description": "提供处方药和非处方药的购买服务，供患者购买医生开具的药物。"
@@ -82,21 +88,28 @@ Analysis:
 2. There is an ORTHOPEDIC department that is RESPONSIBLE for handling issues related to the MUSCULOSKELETAL SYSTEM, which is the most appropriate department for the user to go to SEE A DOCTOR.
 Output:
 orthopedic
-""".replace("<|current_summary_schema|>", str(CurrentSummary.model_json_schema()))
+""".replace("<|current_summary_schema|>", str(ConditionCollectorOutput.model_json_schema()))
 
 
-async def judge_location_online(info: LocationJudgeInput) -> LocationJudgeOutput:
+_logit_bias = utils.build_logit_bias(
+    get_model_func = get_offline_reasoning_model,
+    token_eos = -3.0, # **小幅度**降低模型输出结束符概率，鼓励模型输出更多内容减少意外截断
+    json_block = -10.0, # **大幅度**降低模型输出非JSON格式内容的概率，强制模型输出**纯文本**
+)
+
+
+async def select_clinic_online(info: ClinicSelectorInput) -> str | None:
     """
     使用在线模型进行诊室判断
     Args:
-        info (LocationJudgeInput): 包含当前患者明确症状的总结和地图中所有诊室的信息字典。
+        info (ClinicSelectorInput): 包含当前患者明确症状的总结和地图中所有诊室的信息字典。
     Returns:
-        LocationJudgeOutput: 诊室的id
+        str: 诊室的id
     """
 
     agent = Agent(
-        name = "Department Judge Agent in Hospital Route Planner",
-        instructions = location_judge_instructions,
+        name = "Clinic Selector Agent in Hospital Route Planner",
+        instructions = clinic_selector_instructions,
         model = get_online_reasoning_model(),
         model_settings = ModelSettings(
             temperature = 0.5,
@@ -110,4 +123,44 @@ async def judge_location_online(info: LocationJudgeInput) -> LocationJudgeOutput
         max_turns = 2 # idk whether the agent will ask multiple rounds of questions
     )
 
-    response_text
+    response_text = response.final_output
+
+    logger.debug(f"[CS Agent] Raw LLM Response (online):\n{response_text}")
+
+    return response_text.strip() # 直接返回文本结果
+    
+
+async def select_clinic_offline(info: ClinicSelectorInput) -> str | None:
+    """
+    使用离线模型进行诊室判断
+    Args:
+        info (ClinicSelectorInput): 包含当前患者明确症状的总结和地图中所有诊室的信息字典。
+    Returns:
+        str: 诊室的id
+    """
+
+    offline_reasoning_model = get_offline_reasoning_model()
+
+    get_response_func = lambda: offline_reasoning_model.create_chat_completion(
+        messages = [
+            {"role": "system", "content": clinic_selector_instructions},
+            {"role": "user", "content": "Input: {}".format(info.model_dump_json())}
+        ],
+        response_format = {"type": "text"},
+        temperature = 0.5,
+        max_tokens = 10,
+        logit_bias = _logit_bias()
+    )
+
+    response = await asyncio.to_thread(get_response_func)
+    response_text = str(response["choices"][0]["message"]["content"])
+
+    logger.debug(f"[CS Agent] Raw LLM Response (offline):\n{response_text}")
+
+    return response_text.strip() # 直接返回文本结果
+    
+
+__all__ = [
+    "select_clinic_online",
+    "select_clinic_offline",
+]

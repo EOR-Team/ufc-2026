@@ -42,8 +42,8 @@ def check_network_connection() -> bool:
 
 def build_logit_bias(
     get_model_func: Callable[[], Llama],
-    string_to_probability: dict[str, float],
     # ----- 分割线 -----
+    string_to_probability: dict[str, float] | None = None,
     token_eos: float | None = None,
     json_block: float | None = None,
 ) -> Callable[[], dict[int, float]]:
@@ -63,10 +63,11 @@ def build_logit_bias(
         model = get_model_func()
 
         logit_bias_dict = {}
-        for string, prob in string_to_probability.items():
-            token_list = model.tokenize(string.encode())
-            for token in token_list: # 如果一个字符串对应多个 token，则对每个 token 都进行概率调整
-                logit_bias_dict[token] = prob
+        if string_to_probability is not None:
+            for string, prob in string_to_probability.items():
+                token_list = model.tokenize(string.encode())
+                for token in token_list: # 如果一个字符串对应多个 token，则对每个 token 都进行概率调整
+                    logit_bias_dict[token] = prob
 
         # 可选地调整结束符 token 的概率，鼓励模型输出更完整的内容，减少输出被截断的情况发生
         if token_eos is not None:

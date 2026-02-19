@@ -5,7 +5,7 @@
 from pydantic import BaseModel, Field, ValidationError
 
 
-class CurrentSummary(BaseModel):
+class ConditionCollectorOutput(BaseModel):
     """
     对当前患者明确症状的总结
     """
@@ -16,35 +16,32 @@ class CurrentSummary(BaseModel):
 
     severity: str = Field(..., description="症状的严重程度")
 
+    other_relevant_information: list[str] = Field(default_factory=list, description="其他与诊断患者病情和进行分诊相关的信息")
 
-class MissingField(BaseModel):
+
+class ClinicSelectorInput(BaseModel):
     """
-    患者症状描述中不合标准的字段 的相关信息
-    """
-
-    name: str = Field(..., description="不合标准的字段的名称")
-
-    reason: str = Field(..., description="该字段不合标准的原因 与 患者对其类似的描述")
-
-
-class ConditionCollectorOutput(BaseModel):
-    """
-    信息收集器的输出
+    诊室选择器的输入
     """
 
-    current_summary: CurrentSummary = Field(..., description="当前患者明确症状的总结")
-
-    missing_fields: list[MissingField] = Field(..., description="患者症状描述中不合标准的字段 的相关信息列表")
-
-
-class LocationJudgeInput(BaseModel):
-    """
-    诊室判断器的输入
-    """
-
-    current_summary: CurrentSummary = Field(..., description="当前患者明确症状的总结")
+    current_summary: ConditionCollectorOutput = Field(..., description="当前患者明确症状的总结")
 
     location_id_to_info: dict[str, dict] = Field(..., description="地图中所有诊室的信息字典，键为诊室id，值为诊室的相关信息")
 
 
-LocationJudgeOutput = str # 诊室的id
+class Requirement(BaseModel):
+    """
+    患者的具体需求
+    """
+
+    when: str = Field(..., description="执行某需求的**时机**，例如：在医生问诊过程中、在医生开具处方后、在拿药时等")
+
+    what: str = Field(..., description="患者的具体需求内容，例如：需要医生在问诊过程中多问一些关于症状的问题、需要医生开具某种药物、需要药房提供送药上门服务等")
+
+
+class RequirementCollectorOutput(BaseModel):
+    """
+    需求收集器的输出
+    """
+
+    requirements: list[Requirement] = Field(..., description="患者的具体需求列表")
