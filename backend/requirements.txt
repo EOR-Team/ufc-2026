@@ -20,3 +20,8 @@ pydantic
 sherpa-onnx
 soundfile
 ./melotts-0.1.2-py3-none-any.whl
+
+# Face recognition
+opencv-python
+face_recognition
+numpy
