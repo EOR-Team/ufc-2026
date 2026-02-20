@@ -150,7 +150,7 @@ async def collect_requirement_offline(input: str) -> RequirementCollectorOutput 
             {"role": "system", "content": requirement_collector_instructions},
             {"role": "user", "content": "Input: {}".format(input)}
         ],
-        response_format = {"type": "json_object"},
+        response_format = {"type": "text"},
         temperature = 0.7,
         max_tokens = 2048,
         logit_bias = _logit_bias()

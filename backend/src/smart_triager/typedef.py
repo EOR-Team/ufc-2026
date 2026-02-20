@@ -2,6 +2,7 @@
 # 类型定义
 #
 
+from typing import Literal
 from pydantic import BaseModel, Field, ValidationError
 
 
@@ -20,6 +21,8 @@ class ConditionCollectorOutput(BaseModel):
 
     other_relevant_information: list[str] = Field(default_factory=list, description="其他与诊断患者病情和进行分诊相关的信息")
 
+    clinic_selection: str = Field(..., description="诊室ID: 内科、外科、儿科")
+
 
 class Requirement(BaseModel):
     """
@@ -37,3 +40,54 @@ class RequirementCollectorOutput(BaseModel):
     """
 
     requirements: list[Requirement] = Field(..., description="患者的具体需求列表")
+
+
+class LocationLink(BaseModel):
+    """
+    最终路径中地点之间的链接 单向
+    """
+
+    this: str = Field(..., description="当前地点的ID")
+
+    next: str = Field(..., description="下一个地点的ID")
+
+
+class LocationLinkPatch(BaseModel):
+    """
+    对链接做出的修改 结构化
+
+    **注意**：
+    在死的逻辑中会默认先加载 `delete` 类型的patch，再加载 `insert` 类型的patch。
+    这样设计有便于模型理解和输出，模型只需要根据原路线进行修改，而不需要考虑修改的先后顺序。
+    """
+
+    type: Literal["insert", "delete"] = Field(..., description="修改的类型: insert/delete")
+
+    previous: str = Field(..., description="上一个地点的ID")
+
+    this: str = Field(..., description="当前地点的ID")
+
+    next: str = Field(..., description="下一个地点的ID")
+
+
+class RoutePatcherOutput(BaseModel):
+    """
+    路线修改器的输出
+    """
+
+    patches: list[LocationLinkPatch] = Field(..., description="对原路线的修改方案列表")
+
+
+def generate_route_by_ids(*ids: str) -> list[LocationLink]:
+    """
+    按顺序生成 LocationLink 列表
+    
+    Args:
+        *ids: str ID 列表
+    Returns:
+        list[LocationLink] LocationLink列表
+    """
+
+    return [
+        LocationLink(this=ids[i], next=ids[i + 1]) for i in range(len(ids) - 1)
+    ]

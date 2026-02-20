@@ -247,12 +247,14 @@ with open(MAP_PATH, "r", encoding="utf-8") as f:
 
 main_node_ids = get_all_main_node_ids(map) if map else None
 main_node_id_to_name_and_description = get_all_main_node_id_to_name_and_description(map) if map else None
+clinic_id_to_name_and_description = {node.id: {"name": node.name or "", "description": node.description or ""} for node in map.nodes if node.id.find("clinic") != -1} if map else None
 
 
 __all__ = [
     "map",
     "main_node_ids",
     "main_node_id_to_name_and_description",
+    "clinic_id_to_name_and_description",
     "load_map_from_str",
     "compute_costs",
     "check_map_validity",
