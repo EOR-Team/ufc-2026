@@ -16,9 +16,7 @@ python-dotenv
 # Pydantic for data validation
 pydantic
 
-# Microsoft's GraphRAG
-# graphrag
-# litellm
-
-# Some tools
-gson
+# TTS and STT
+sherpa-onnx
+soundfile
+./melotts-0.1.2-py3-none-any.whl
