@@ -141,6 +141,7 @@ celerybeat.pid
 .env
 .envrc
 .venv
+.tts_venv
 env/
 venv/
 ENV/
