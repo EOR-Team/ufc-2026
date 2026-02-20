@@ -289,7 +289,7 @@ async def patch_route_online(
 async def patch_route_offline(
     destination_clinic_id: str,
     requirement_summary: list[Requirement],
-    origin_route: list[LocationLink] = generate_route("surgery_clinic")
+    origin_route: list[LocationLink]
 ) -> RoutePatcherOutput | None:
     """
     根据用户的目的地诊室ID和需求摘要，生成对原路线的修改方案
@@ -330,3 +330,11 @@ async def patch_route_offline(
     except (json.JSONDecodeError, ValidationError) as e:
         logger.error(f"Failed to parse LLM response: {e}")
         return None
+
+
+__all__ = [
+    "patch_route_online",
+    "patch_route_offline",
+    "generate_route"
+]
+

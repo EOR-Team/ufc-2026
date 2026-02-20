@@ -167,3 +167,9 @@ async def collect_requirement_offline(input: str) -> RequirementCollectorOutput 
     except (json.JSONDecodeError, ValidationError) as e:
         logger.error(f"Failed to parse LLM response: {e}")
         return None
+
+
+__all__ = [
+    "collect_requirement_online",
+    "collect_requirement_offline"
+]
