@@ -144,6 +144,7 @@ celerybeat.pid
 .env
 .envrc
 .venv
+.tts_venv
 env/
 venv/
 ENV/
@@ -211,3 +212,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# .tar.bz2
+*.tar.bz2
