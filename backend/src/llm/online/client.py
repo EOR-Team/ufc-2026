@@ -28,7 +28,7 @@ def _build_online_client():
     online_client = AsyncOpenAI(
         base_url = general.ONLINE_MODEL_HOST,
         api_key = os.getenv("API_KEY"),
-        timeout=30.0,
+        timeout=300,
     )
 
 

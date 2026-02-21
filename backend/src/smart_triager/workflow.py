@@ -45,6 +45,7 @@ async def collect_conditions(
         
         # 返回为空 重新解析
         _retry_time += 1
+        logger.warning(f"Collect conditions failed. Already retry {_retry_time} times. Retrying...")
     
     # 最终还是没有解析成功 返回空
     return None
@@ -84,6 +85,7 @@ async def collect_requirement(
         
         # 返回为空 重新解析
         _retry_time += 1
+        logger.warning(f"Collect requirement failed. Already retry {_retry_time} times. Retrying...")
     
     # 最终还是没有解析成功 返回空
     return None
@@ -96,7 +98,7 @@ async def patch_route(
     requirement_summary: list[Requirement],
     origin_route: list[LocationLink],
     online_model: bool
-) -> list[LocationLinkPatch] | None:
+) -> RoutePatcherOutput | None:
     """
     根据用户的目的地诊室ID和需求摘要 对原路线进行修改
     以满足用户的个性化需求
@@ -108,7 +110,7 @@ async def patch_route(
         online_model (bool): 是否使用在线模型进行推理
 
     Returns:
-        list[LocationLinkPatch]: 路线修改方案列表
+        RoutePatcherOutput: 路线修改方案输出对象
         None: 重试 `_CR_MAX_RETRY` 次后 仍然解析失败 返回空
     """
 
@@ -125,9 +127,10 @@ async def patch_route(
         
         if rsp:
             # 能够**正常**获取返回值 直接退出返回
-            return rsp.patches
+            return rsp
         
         # 返回为空 重新解析
+        logger.warning(f"Patch route failed. Already retry {_retry_time} times. Retrying...")
         _retry_time += 1
     
     # 最终还是没有解析成功 返回空
@@ -138,7 +141,7 @@ async def modify_route(
     user_input: str,
     origin_route: list[LocationLink],
     online_model: bool
-) -> list[LocationLinkPatch] | None:
+) -> RoutePatcherOutput | None:
     """
     从用户的输入中提取出他的个性化需求
     并根据现有地图结构 给出分诊的诊室建议
@@ -150,7 +153,7 @@ async def modify_route(
         origin_route (list[LocationLink]): 原路线列表
         online_model (bool): 是否使用在线模型进行推理
     Returns:
-        list[LocationLinkPatch]: 路线修改方案列表
+        RoutePatcherOutput: 路线修改方案输出对象
         None: 解析失败 返回空
     """
 
@@ -173,7 +176,7 @@ async def modify_route(
     if not cc_output or not cr_output:
         # 上述任一解析失败 直接返回空 无法修改路线
         return None
-    
+
     return await patch_route(
         cc_output.clinic_selection,
         cr_output.requirements,
@@ -182,3 +185,6 @@ async def modify_route(
     )
 
     
+__all__ = [
+    "modify_route",
+]

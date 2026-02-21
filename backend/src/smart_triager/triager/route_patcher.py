@@ -57,8 +57,8 @@ def _transform_input_to_text(
 
     input_obj = {
         "destination_clinic_id": destination_clinic_id,
-        "requirement_summary": requirement_summary,
-        "origin_route": origin_route
+        "requirement_summary": [r.model_dump() for r in requirement_summary],
+        "origin_route": [link.model_dump() for link in origin_route]
     }
 
     return json.dumps(input_obj, ensure_ascii=False, indent=2)
@@ -260,7 +260,7 @@ async def patch_route_online(
         name = "Route Patcher Agent in Hospital Route Planner",
         instructions = route_patcher_instructions.replace(
             "$origin_route_mark$",
-            json.dumps(generate_route(destination_clinic_id), ensure_ascii=False, indent=4)
+            json.dumps([link.model_dump() for link in generate_route(destination_clinic_id)], ensure_ascii=False, indent=4)
         ),
         model = get_online_reasoning_model(),
         model_settings = ModelSettings(
@@ -309,7 +309,7 @@ async def patch_route_offline(
         messages = [
             {"role": "system", "content": route_patcher_instructions.replace(
                 "$origin_route_mark$",
-                json.dumps(generate_route(destination_clinic_id), ensure_ascii=False, indent=4)
+                json.dumps([link.model_dump() for link in generate_route(destination_clinic_id)], ensure_ascii=False, indent=4)
             )},
             {"role": "user", "content": "Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) )}
         ],
