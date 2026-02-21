@@ -1,8 +1,6 @@
 #!/bin/bash
 # install_melo.sh - 自动安装 MeloTTS 和字典
 
-set -e
-
 echo "========================================"
 echo "  MeloTTS 自动安装脚本"
 echo "========================================"
@@ -11,20 +9,11 @@ echo "========================================"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # 成功/失败计数
 SUCCESS=0
 FAILED=0
-
-# 检查命令是否存在
-check_cmd() {
-    if command -v "$1" &> /dev/null; then
-        return 0
-    else
-        return 1
-    fi
-}
 
 # 打印状态
 print_status() {
@@ -44,9 +33,9 @@ echo ""
 echo ">>> 检查环境..."
 
 # 检查 Python
-if check_cmd python; then
+if command -v python &> /dev/null; then
     PYTHON_CMD="python"
-elif check_cmd python3; then
+elif command -v python3 &> /dev/null; then
     PYTHON_CMD="python3"
 else
     echo -e "${RED}[✗] 未找到 Python，请先安装 Python 3.10+${NC}"
@@ -57,7 +46,7 @@ PYTHON_VERSION=$($PYTHON_CMD --version 2>&1 | awk '{print $2}')
 echo -e "${GREEN}[✓]${NC} Python 版本: $PYTHON_VERSION"
 
 # 检查 pip
-if ! check_cmd pip; then
+if ! command -v pip &> /dev/null; then
     $PYTHON_CMD -m ensurepip --upgrade
 fi
 echo -e "${GREEN}[✓]${NC} pip 已就绪"
@@ -84,8 +73,8 @@ echo -e "${GREEN}[✓]${NC} 找到安装包: $WHL_FILE"
 echo ""
 echo ">>> 安装 MeloTTS..."
 
- $PYTHON_CMD -m pip install --upgrade pip --quiet
- $PYTHON_CMD -m pip install "$WHL_FILE" --quiet
+ $PYTHON_CMD -m pip install --upgrade pip --quiet 2>/dev/null
+ $PYTHON_CMD -m pip install "$WHL_FILE" --quiet 2>/dev/null
 
 if [ $? -eq 0 ]; then
     print_status 0 "MeloTTS 安装成功"
@@ -113,18 +102,19 @@ if [ -n "$DICT_FILE" ]; then
     if [ -n "$UNIDIC_PATH" ]; then
         # 解压字典
         mkdir -p "$UNIDIC_PATH"
-        unzip -o -q "$DICT_FILE" -d "$UNIDIC_PATH"
+        unzip -o -q "$DICT_FILE" -d "$UNIDIC_PATH" 2>/dev/null
         print_status $? "字典解压完成"
     else
-        # 回退到下载
         echo -e "${YELLOW}[!]${NC} 无法获取字典路径，尝试在线下载..."
         $PYTHON_CMD -m unidic download
         print_status $? "字典下载完成"
     fi
 else
     echo -e "${YELLOW}[!]${NC} 未找到本地字典，尝试在线下载..."
+    echo ">>> 执行: python -m unidic download"
     $PYTHON_CMD -m unidic download
-    print_status $? "字典下载完成"
+    DICT_RESULT=$?
+    print_status $DICT_RESULT "字典下载完成"
 fi
 
 # ========================================
@@ -135,35 +125,37 @@ echo ">>> 检测安装结果..."
 
 # 检测导入
 echo "测试导入模块..."
-IMPORT_TEST=$($PYTHON_CMD -c "from melo.api import TTS" 2>&1)
-if [ $? -eq 0 ]; then
+IMPORT_RESULT=$($PYTHON_CMD -c "from melo.api import TTS" 2>&1)
+IMPORT_CODE=$?
+if [ $IMPORT_CODE -eq 0 ]; then
     print_status 0 "模块导入成功"
 else
-    print_status 1 "模块导入失败: $IMPORT_TEST"
+    print_status 1 "模块导入失败"
+    echo "$IMPORT_RESULT"
 fi
 
 # 检测模型初始化
 echo "测试模型初始化..."
-INIT_TEST=$($PYTHON_CMD -c "
+INIT_RESULT=$($PYTHON_CMD -c "
 import os
 import warnings
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 warnings.filterwarnings('ignore')
 from melo.api import TTS
 tts = TTS(language='ZH', device='cpu')
-print('OK')
+print('INIT_OK')
 " 2>&1)
 
-if [[ "$INIT_TEST" == *"OK"* ]]; then
+if [[ "$INIT_RESULT" == *"INIT_OK"* ]]; then
     print_status 0 "模型初始化成功"
 else
     print_status 1 "模型初始化失败"
-    echo "$INIT_TEST"
+    echo "$INIT_RESULT"
 fi
 
 # 检测 TTS 合成
 echo "测试语音合成..."
-TTS_TEST=$($PYTHON_CMD -c "
+TTS_RESULT=$($PYTHON_CMD -c "
 import os
 import warnings
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
@@ -171,20 +163,20 @@ warnings.filterwarnings('ignore')
 from melo.api import TTS
 tts = TTS(language='ZH', device='cpu')
 tts.tts_to_file('测试', speaker_id=0, output_path='/tmp/melo_test.wav')
-print('OK')
+print('TTS_OK')
 " 2>&1)
 
-if [[ "$TTS_TEST" == *"OK"* ]]; then
+if [[ "$TTS_RESULT" == *"TTS_OK"* ]]; then
     print_status 0 "语音合成成功"
     # 检查文件
     if [ -f "/tmp/melo_test.wav" ]; then
-        FILE_SIZE=$(stat -c%s "/tmp/melo_test.wav" 2>/dev/null || stat -f%z "/tmp/melo_test.wav" 2>/dev/null)
+        FILE_SIZE=$(stat -c%s "/tmp/melo_test.wav" 2>/dev/null || stat -f%z "/tmp/melo_test.wav" 2>/dev/null || echo "unknown")
         print_status 0 "生成音频文件: ${FILE_SIZE} bytes"
         rm -f /tmp/melo_test.wav
     fi
 else
     print_status 1 "语音合成失败"
-    echo "$TTS_TEST"
+    echo "$TTS_RESULT"
 fi
 
 # ========================================
@@ -202,7 +194,9 @@ if [ $FAILED -eq 0 ]; then
     echo -e "${GREEN}>>> MeloTTS 安装完成！${NC}"
     echo ""
     echo "使用示例:"
-    echo "  python -c \"from melo.api import TTS; TTS(language='ZH').tts_to_file('你好', speaker_id=0, output_path='out.wav')\""
+    echo "  from melo.api import TTS"
+    echo "  tts = TTS(language='ZH', device='cpu')"
+    echo "  tts.tts_to_file('你好世界', speaker_id=0, output_path='out.wav')"
     exit 0
 else
     echo ""
