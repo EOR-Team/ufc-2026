@@ -1,4 +1,5 @@
 venv310/
+_venv/
 
 
 # LLM model files

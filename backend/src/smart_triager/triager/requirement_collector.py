@@ -13,6 +13,7 @@ from src.llm.online import get_online_chat_model
 from src.llm.offline import get_offline_chat_model
 from src.smart_triager.typedef import *
 
+
 requirement_collector_instructions = """
 ## Background
 You are now working in a SMART TRIAGE and ROUTING system designed for a **CHINESE** HOSPITAL ENVIRONMENT. The system's ultimate goal is to plan routes for users based on their specific needs and constraints.
@@ -152,7 +153,7 @@ async def collect_requirement_offline(input: str) -> RequirementCollectorOutput 
         ],
         response_format = {"type": "text"},
         temperature = 0.7,
-        max_tokens = 2048,
+        max_tokens = 1024,
         logit_bias = _logit_bias()
     )
 
@@ -167,3 +168,9 @@ async def collect_requirement_offline(input: str) -> RequirementCollectorOutput 
     except (json.JSONDecodeError, ValidationError) as e:
         logger.error(f"Failed to parse LLM response: {e}")
         return None
+
+
+__all__ = [
+    "collect_requirement_online",
+    "collect_requirement_offline"
+]

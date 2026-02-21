@@ -67,17 +67,17 @@ echo -e "${GREEN}[✓]${NC} Python 版本: $PYTHON_VERSION (命令: $PYTHON_CMD)
 print_section "检查虚拟环境..."
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VENV_DIR="$SCRIPT_DIR/venv310"
+VENV_DIR="$SCRIPT_DIR/venv"
 
 if [ -f "$VENV_DIR/bin/python" ]; then
     echo -e "${GREEN}[✓]${NC} 找到虚拟环境: $VENV_DIR"
 else
-    echo -e "${YELLOW}[!]${NC} 未找到 venv310，将创建新的虚拟环境..."
+    echo -e "${YELLOW}[!]${NC} 未找到 venv，将创建新的虚拟环境..."
     "$PYTHON_CMD" -m venv "$VENV_DIR"
     print_status $? "虚拟环境创建完成: $VENV_DIR"
 fi
 
-# 所有后续 python 指令均直接使用 venv310 中的解释器
+# 所有后续 python 指令均直接使用 venv 中的解释器
 PYTHON_CMD="$VENV_DIR/bin/python"
 echo -e "${GREEN}[✓]${NC} 使用 Python: $PYTHON_CMD"
 
@@ -387,7 +387,7 @@ if [ "$FAILED" -eq 0 ]; then
     echo -e "${GREEN}>>> 所有依赖安装完成！${NC}"
     echo ""
     echo "激活虚拟环境后启动项目："
-    echo "  source venv310/bin/activate"
+    echo "  source venv/bin/activate"
     echo "  uvicorn src.main:app --reload"
     exit 0
 else
