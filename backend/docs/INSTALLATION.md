@@ -1,6 +1,6 @@
 # 后端开发配置教程
 
-本文档在 `ubuntu 24.04` &amp; `Python 3.12.0 with pyenv` 环境下通过测试。
+本文档在 `ubuntu 24.04` &amp; `Python 3.10.0 with pyenv` 环境下通过测试。
 
 ## 1. 安装依赖
 
