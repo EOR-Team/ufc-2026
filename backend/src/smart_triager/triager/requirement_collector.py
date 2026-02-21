@@ -152,7 +152,7 @@ async def collect_requirement_offline(input: str) -> RequirementCollectorOutput 
         ],
         response_format = {"type": "text"},
         temperature = 0.7,
-        max_tokens = 2048,
+        max_tokens = 1024,
         logit_bias = _logit_bias()
     )
 

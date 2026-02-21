@@ -27,19 +27,6 @@ def remove_os_environ_proxies() -> None:
     os.environ['NO_PROXY'] = '*'
 
 
-def check_network_connection() -> bool:
-    """
-    简单检查是否有网络连接
-    """
-
-    try:
-        # 使用 ping 命令检查连接
-        process = subprocess.Popen(['ping', '-c', '1', '8.8.8.8'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return process.wait() == 0
-    except (subprocess.SubprocessError, FileNotFoundError):
-        return False
-
-
 def build_logit_bias(
     get_model_func: Callable[[], Llama],
     # ----- 分割线 -----

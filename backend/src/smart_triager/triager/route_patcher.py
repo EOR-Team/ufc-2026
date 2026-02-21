@@ -9,7 +9,7 @@ from agents import Agent, ModelSettings, Runner
 
 from src import logger, utils
 from src.llm.online import get_online_reasoning_model
-from src.llm.offline import get_offline_reasoning_model
+from src.llm.offline import get_offline_chat_model
 from src.smart_triager.typedef import *
 from src.map import main_node_id_to_name_and_description
 
@@ -231,7 +231,7 @@ Output:
 
 
 _logit_bias = utils.build_logit_bias(
-    get_model_func = get_offline_reasoning_model,
+    get_model_func = get_offline_chat_model,
     string_to_probability = {
     },
     token_eos = -5.0, # 降低模型输出结束符概率，鼓励模型输出更多内容，减少意外截断
@@ -303,7 +303,7 @@ async def patch_route_offline(
         RoutePatcherOutput: 路线修改方案列表
     """
 
-    model = get_offline_reasoning_model()
+    model = get_offline_chat_model()
 
     get_response_func = lambda: model.create_chat_completion(
         messages = [
@@ -315,7 +315,7 @@ async def patch_route_offline(
         ],
         response_format = {"type": "text"},
         temperature = 0.6,
-        max_tokens = 4096,
+        max_tokens = 1024,
         logit_bias = _logit_bias()
     )
 

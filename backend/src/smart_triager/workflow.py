@@ -157,9 +157,8 @@ async def modify_route(
         None: 解析失败 返回空
     """
 
-    # 如果使用在线模型推理 那么允许异步并行执行
-    # 如果使用离线模型推理 `llama-cpp-python` 针对同一个模型实例只能串行执行
-    # 但是在这个场景下 使用了两个不同的离线模型实例 不会相互干扰 所以也可以异步并行执行
+    # 在线模型各自使用独立的 HTTP 连接，可以安全地并发执行
+    # 离线模型 CC 和 RC 共享同一个 chat model 实例（非线程安全），必须串行执行
 
     if online_model:
         cc_output, cr_output = await asyncio.gather(
@@ -167,10 +166,8 @@ async def modify_route(
             collect_requirement_online(user_input)
         )
     else:
-        cc_output, cr_output = await asyncio.gather(
-            collect_conditions_offline(user_input),
-            collect_requirement_offline(user_input)
-        )
+        cc_output = await collect_conditions_offline(user_input)
+        cr_output = await collect_requirement_offline(user_input)
     
     # 获取到数据之后 修改路线
     if not cc_output or not cr_output:
