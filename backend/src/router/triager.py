@@ -8,7 +8,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from src.smart_triager.typedef import *
-from src.smart_triager.workflow import *
+from src.smart_triager.triager.workflow import *
 
 
 triager_router = APIRouter(prefix="/triager")
