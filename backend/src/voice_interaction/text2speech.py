@@ -1,12 +1,13 @@
 import os
 from melo.api import TTS
 import soundfile as sf
+import re
 
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 class TextToSpeech:
-    def __init__(self,output_dir="output"):
-        self.tts = TTS(language="zh", device="cpu")
+    def __init__(self,output_dir="./voice_interaction/output"):
+        self.tts = TTS(language="ZH", device="cpu")
         self.sample_rate = self.tts.hps.data.sampling_rate
         self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)
@@ -36,10 +37,11 @@ class TextToSpeech:
                 'sample_rate': sr
             }
 
-    def tts(self,text):
+    def generate_files(self, text):
         files = []
         for chunk in self.synthesize(text):
             file_name = os.path.join(self.output_dir, f"chunk_{chunk['index']}.wav")
             sf.write(file_name, chunk['audio'], chunk['sample_rate'])
             files.append(file_name)
+            print(f"  ✓ {chunk['text']} -> {file_name}")
         return files
