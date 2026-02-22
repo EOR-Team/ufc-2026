@@ -8,8 +8,8 @@ from contextlib import asynccontextmanager
 
 from src import logger
 from src.router import api_router
-from src.llm import online, offline
-from src.utils import remove_os_environ_proxies, check_network_connection
+from src.llm import offline
+from src.utils import remove_os_environ_proxies
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,16 +21,10 @@ async def lifespan(app: FastAPI):
     logger.info("Starting backend server...")
     remove_os_environ_proxies() # 移除环境变量中的代理设置，防止影响本地服务调用
 
-    if not check_network_connection():
-        # 如果没网 默认后面一直在离线模型运行 直接初始化离线模型
-        logger.warning("No network connection detected. Defaulting to offline LLM models.")
-        offline.get_offline_chat_model()
-        offline.get_offline_reasoning_model()
-    else:
-        # 那就是有网 默认后面一直用在线模型 直接初始化在线模型
-        logger.warning("Network connection detected. Using online LLM models.")
-        online.get_online_chat_model()
-        online.get_online_reasoning_model()
+    logger.info("Starting offline chat models models...")
+    offline.get_offline_chat_model() # 预加载离线聊天模型
+    # offline.get_offline_reasoning_model() # 预加载离线推理模型
+    logger.info("Offline models initialized.")  
 
     yield 
 

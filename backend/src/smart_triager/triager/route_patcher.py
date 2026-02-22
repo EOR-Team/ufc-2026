@@ -9,7 +9,7 @@ from agents import Agent, ModelSettings, Runner
 
 from src import logger, utils
 from src.llm.online import get_online_reasoning_model
-from src.llm.offline import get_offline_reasoning_model
+from src.llm.offline import get_offline_chat_model
 from src.smart_triager.typedef import *
 from src.map import main_node_id_to_name_and_description
 
@@ -57,8 +57,8 @@ def _transform_input_to_text(
 
     input_obj = {
         "destination_clinic_id": destination_clinic_id,
-        "requirement_summary": requirement_summary,
-        "origin_route": origin_route
+        "requirement_summary": [r.model_dump() for r in requirement_summary],
+        "origin_route": [link.model_dump() for link in origin_route]
     }
 
     return json.dumps(input_obj, ensure_ascii=False, indent=2)
@@ -231,7 +231,7 @@ Output:
 
 
 _logit_bias = utils.build_logit_bias(
-    get_model_func = get_offline_reasoning_model,
+    get_model_func = get_offline_chat_model,
     string_to_probability = {
     },
     token_eos = -5.0, # 降低模型输出结束符概率，鼓励模型输出更多内容，减少意外截断
@@ -260,7 +260,7 @@ async def patch_route_online(
         name = "Route Patcher Agent in Hospital Route Planner",
         instructions = route_patcher_instructions.replace(
             "$origin_route_mark$",
-            json.dumps(generate_route(destination_clinic_id), ensure_ascii=False, indent=4)
+            json.dumps([link.model_dump() for link in generate_route(destination_clinic_id)], ensure_ascii=False, indent=4)
         ),
         model = get_online_reasoning_model(),
         model_settings = ModelSettings(
@@ -289,7 +289,7 @@ async def patch_route_online(
 async def patch_route_offline(
     destination_clinic_id: str,
     requirement_summary: list[Requirement],
-    origin_route: list[LocationLink] = generate_route("surgery_clinic")
+    origin_route: list[LocationLink]
 ) -> RoutePatcherOutput | None:
     """
     根据用户的目的地诊室ID和需求摘要，生成对原路线的修改方案
@@ -303,19 +303,19 @@ async def patch_route_offline(
         RoutePatcherOutput: 路线修改方案列表
     """
 
-    model = get_offline_reasoning_model()
+    model = get_offline_chat_model()
 
     get_response_func = lambda: model.create_chat_completion(
         messages = [
             {"role": "system", "content": route_patcher_instructions.replace(
                 "$origin_route_mark$",
-                json.dumps(generate_route(destination_clinic_id), ensure_ascii=False, indent=4)
+                json.dumps([link.model_dump() for link in generate_route(destination_clinic_id)], ensure_ascii=False, indent=4)
             )},
             {"role": "user", "content": "Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) )}
         ],
         response_format = {"type": "text"},
         temperature = 0.6,
-        max_tokens = 4096,
+        max_tokens = 1024,
         logit_bias = _logit_bias()
     )
 
@@ -330,3 +330,11 @@ async def patch_route_offline(
     except (json.JSONDecodeError, ValidationError) as e:
         logger.error(f"Failed to parse LLM response: {e}")
         return None
+
+
+__all__ = [
+    "patch_route_online",
+    "patch_route_offline",
+    "generate_route"
+]
+
