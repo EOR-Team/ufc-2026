@@ -21,25 +21,38 @@
 
         <!-- 主插画容器 -->
         <div class="absolute inset-0 flex items-center justify-center overflow-hidden rounded-3xl bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-800">
-          <!-- 模拟扫描图形 -->
-          <div class="relative w-full h-full flex items-center justify-center">
+          <!-- 摄像头画面（有摄像头时显示） -->
+          <video
+            v-show="cameraCount > 0"
+            ref="videoRef"
+            autoplay
+            playsinline
+            muted
+            class="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
+          />
+
+          <!-- 无摄像头时的占位图形 -->
+          <div v-if="cameraCount === 0 || cameraCount === -1" class="relative w-full h-full flex items-center justify-center">
             <span class="material-symbols-outlined text-[160px] text-primary/10 select-none">face</span>
-
-            <!-- 科技覆盖层 -->
-            <div class="absolute inset-0 flex items-center justify-center">
-              <div class="w-48 h-48 border-2 border-dashed border-primary/40 rounded-full"></div>
-              <div class="absolute h-1 bg-primary/40 blur-sm top-1/2 -translate-y-1/2 w-full"></div>
-            </div>
-
-            <!-- 扫描点 -->
-            <div class="absolute top-1/4 left-1/3 w-2 h-2 bg-primary rounded-full glow-effect chaos-motion-1"></div>
-            <div class="absolute top-1/3 right-1/4 w-2 h-2 bg-primary rounded-full glow-effect chaos-motion-2"></div>
-            <div class="absolute bottom-1/3 left-1/4 w-2 h-2 bg-primary rounded-full glow-effect chaos-motion-3"></div>
-            <div class="absolute bottom-1/4 right-1/2 w-2 h-2 bg-primary rounded-full glow-effect chaos-motion-4"></div>
-
-            <!-- 扫描线覆盖层 -->
-            <div class="scan-line top-1/4 opacity-50"></div>
           </div>
+
+          <!-- 科技覆盖层（始终叠加在摄像头上方） -->
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="w-48 h-48 border-2 border-dashed border-primary/40 rounded-full"></div>
+            <div class="absolute h-1 bg-primary/40 blur-sm top-1/2 -translate-y-1/2 w-full"></div>
+          </div>
+
+          <!-- 扫描点 -->
+          <div class="absolute top-1/4 left-1/3 w-2 h-2 bg-primary rounded-full glow-effect chaos-motion-1 pointer-events-none"></div>
+          <div class="absolute top-1/3 right-1/4 w-2 h-2 bg-primary rounded-full glow-effect chaos-motion-2 pointer-events-none"></div>
+          <div class="absolute bottom-1/3 left-1/4 w-2 h-2 bg-primary rounded-full glow-effect chaos-motion-3 pointer-events-none"></div>
+          <div class="absolute bottom-1/4 right-1/2 w-2 h-2 bg-primary rounded-full glow-effect chaos-motion-4 pointer-events-none"></div>
+
+          <!-- 扫描线覆盖层 -->
+          <div class="scan-line top-1/4 opacity-50 pointer-events-none"></div>
+
+          <!-- 错误提示 -->
+          <div v-if="error" class="absolute bottom-2 left-0 right-0 text-center text-[10px] text-red-400 px-2">{{ error }}</div>
         </div>
 
         <!-- 角标装饰 -->
@@ -79,12 +92,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import FixedAspectContainer from '@/components/FixedAspectContainer.vue'
+import { useCamera } from '@/composables/useCamera'
 
 const router = useRouter()
 const isLoggingIn = ref(false)
+
+const { videoRef, cameraCount, error, start } = useCamera()
+onMounted(() => start())
 
 const handleFaceLogin = async () => {
   if (isLoggingIn.value) return
