@@ -36,8 +36,16 @@ body {
   padding: 0;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: center; /* 默认垂直居中 */
   background-color: #f6f6f8;
+  overflow: auto; /* 允许滚动，当内容超出时 */
+}
+
+/* 当内容高度超过视口时，切换到顶部对齐 */
+#app.content-exceeds-viewport {
+  align-items: flex-start;
+  padding-top: 20px; /* 添加一些顶部内边距 */
+  padding-bottom: 20px; /* 添加一些底部内边距 */
 }
 
 a {

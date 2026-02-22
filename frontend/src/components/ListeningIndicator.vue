@@ -10,14 +10,14 @@
       <div class="w-64 h-64 rounded-full bg-primary/10 animate-pulse-ring absolute" style="animation-delay:1s"></div>
     </div>
     <!-- Audio wave bars -->
-    <div class="relative z-10 flex items-center justify-center gap-2 h-32">
+    <div class="relative z-10 flex items-center justify-center gap-2 h-32 bg-transparent">
       <div class="w-2 bg-primary rounded-full animate-wave-1 opacity-40"></div>
       <div class="w-2 bg-primary rounded-full animate-wave-2 opacity-60"></div>
       <div class="w-2 bg-primary rounded-full animate-wave-3 opacity-100"></div>
       <div class="w-2 bg-primary rounded-full animate-wave-4 opacity-60"></div>
       <div class="w-2 bg-primary rounded-full animate-wave-5 opacity-40"></div>
     </div>
-    <p class="mt-3 text-primary font-medium tracking-wide text-sm uppercase">正在倾听...</p>
+    <p class="mt-3 text-primary font-medium tracking-wide text-sm uppercase bg-primary/10 backdrop-blur-sm rounded-full px-4 py-0.5 border border-primary/20">正在倾听...</p>
   </div>
 </template>
 
