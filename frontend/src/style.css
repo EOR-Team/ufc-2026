@@ -48,10 +48,17 @@ body {
   padding-bottom: 20px;
 }
 
-/* 禁止所有 Material Symbols 图标被选中（长按时不触发文本选择） */
+/* 禁止 Material Symbols 图标被选中（长按时不触发文本选择） */
 .material-symbols-outlined {
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* 隐藏原生滚动条轨道，保留滚动能力（Material Design 移动端标准做法） */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 
