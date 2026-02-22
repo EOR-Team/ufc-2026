@@ -25,7 +25,7 @@ const emit = defineEmits(['click'])
 
 <template>
   <button
-    :class="['w-full text-left hover:bg-slate-50 transition-colors', divider ? 'border-b border-slate-100' : '']"
+    :class="['w-full text-left transition-colors', divider ? 'border-b border-slate-100' : '']"
     @click="emit('click')"
   >
     <SettingsItem :icon="icon" :label="label">

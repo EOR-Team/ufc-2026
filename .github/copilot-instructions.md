@@ -1,6 +1,23 @@
 # Copilot Instructions — ufc-2026
 
-> U Create Future 2026 | Backend: FastAPI + llama-cpp-python + DeepSeek | Frontend: Vue3 + Pinia + Vuetify + Tailwind CSS
+> U Create Future 2026 | Backend: FastAPI + llama-cpp-python + DeepSeek | Frontend: Vue3 + Vuetify 3 + Tailwind CSS v4
+
+## 技术栈版本信息
+
+### 后端技术栈
+- **FastAPI**: 现代Python Web框架
+- **llama-cpp-python**: 本地LLM推理
+- **DeepSeek**: 在线LLM API
+- **Pydantic**: 数据验证和序列化
+
+### 前端技术栈（具体版本）
+- **Vue 3**: 3.5.25 (Composition API)
+- **Vuetify**: 3.12.0 (Material Design 3)
+- **Tailwind CSS**: v4.2.0 (最新版本)
+- **Vite**: 7.3.1 (构建工具)
+- **Vue Router**: 5.0.3
+- **Pinia**: 3.0.4 (状态管理，当前未使用)
+- **Material Design Icons**: @mdi/font 7.4.47
 
 ---
 
@@ -63,8 +80,23 @@ No automated test framework. Ad-hoc scripts go in `backend/src/test/`. Run them 
 
 ## Frontend Conventions
 
-### Tech stack
-Vue 3 Composition API · Pinia (setup-store style) · Vuetify 3 (Material Design) · Tailwind CSS v4 · Vue Router
+### Tech stack (具体版本)
+- **Vue 3**: 3.5.25 (Composition API)
+- **Vuetify**: 3.12.0 (Material Design 3)
+- **Tailwind CSS**: v4.2.0 (最新版本)
+- **Vite**: 7.3.1 (构建工具)
+- **Vue Router**: 5.0.3
+- **Pinia**: 3.0.4 (状态管理，当前未使用)
+- **Material Design Icons**: @mdi/font 7.4.47
+
+### 项目状态说明
+- ✅ **基础架构**: 完整的前端技术栈已搭建
+- ✅ **核心组件**: 完整的UI组件系统已实现
+- ✅ **路由系统**: 主页 + 设置页，支持懒加载
+- ✅ **语音交互**: 长按录音 + 完整视觉反馈
+- ⏳ **状态管理**: Pinia stores目录为空，待实现
+- ⏳ **后端集成**: 当前使用mock数据，需要连接后端API
+- ⏳ **语音功能**: 语音识别和合成待集成
 
 ### Store pattern — setup-store style
 ```js
@@ -88,10 +120,18 @@ Use **Vuetify components** (`v-btn`, `v-card`, etc.) for structure and interacti
 
 ### UI Design Documentation
 For comprehensive UI design guidelines, refer to:
-- **[ui_design_aesthetics.md](../frontend/docs/ui_design_aesthetics.md)** - Complete UI design system with visual specifications
-- **[ui_design_principles.md](../frontend/docs/ui_design_principles.md)** - Core design principles and development guidelines
+- **[ui_design_aesthetics.md](../frontend/docs/ui_design_aesthetics.md)** - 完整的UI设计系统，包含视觉规范和技术栈详情
+- **[ui_design_principles.md](../frontend/docs/ui_design_principles.md)** - 核心设计原则和开发指南
 
-These documents cover color systems, typography, spacing, component specifications, and interaction patterns.
+#### 文档状态（2026年2月22日更新）
+- ✅ **版本**: 1.1.0（基于实际代码分析更新）
+- ✅ **技术栈**: 更新为实际使用的版本信息
+- ✅ **组件规范**: 反映实际实现的四层消息气泡架构
+- ✅ **交互细节**: 更新长按阈值为实际使用的250ms
+- ✅ **尺寸说明**: 区分默认尺寸和规划尺寸
+- ✅ **项目状态**: 添加详细的完成状态和待完善功能
+
+这些文档涵盖色彩系统、排版、间距、组件规范、交互模式以及实际项目状态。
 
 ---
 
@@ -99,10 +139,40 @@ These documents cover color systems, typography, spacing, component specificatio
 
 ### Fixed Aspect Ratio Container Pattern
 All page-level components must use the `FixedAspectContainer` component with these specifications:
-1. **统一尺寸**: All pages use fixed dimensions of `332 × 774.66px` (9:21 aspect ratio)
-2. **标识ID**: The container has `id="main-display-block"` for consistent targeting
-3. **视觉一致性**: All containers use `bg-white` background and `shadow-2xl` shadow
-4. **溢出控制**: Content must NOT overflow outside the container. Use `overflow-y: auto` for scrollable content within the container bounds.
+
+#### 尺寸规范
+1. **规划尺寸**: `332 × 774.66px` (9:21 aspect ratio) - 设计规范中的目标尺寸
+2. **默认尺寸**: `300 × 600px` - 组件实际默认值
+3. **当前状态**: `HomeView` 和 `SettingsView` 使用默认尺寸，静态HTML文件使用规划尺寸
+
+#### 实现规范
+1. **标识ID**: 容器必须设置 `id="main-display-block"` 用于样式和脚本定位
+2. **视觉一致性**: 所有容器使用 `bg-white` 背景和 `shadow-2xl` 阴影
+3. **溢出控制**: 内容不能溢出容器外部，使用 `overflow-y: auto` 实现内部滚动
+4. **响应式适配**: 通过 `useViewportOverflow` composable 自动检测和适配视口溢出
+
+#### 使用示例
+```vue
+<!-- 使用默认尺寸（300×600px） -->
+<FixedAspectContainer
+  bg-color-class="bg-white"
+  extra-class="font-display"
+  :shadow="true"
+>
+  <!-- 页面内容 -->
+</FixedAspectContainer>
+
+<!-- 使用规划尺寸（332×774.66px） -->
+<FixedAspectContainer
+  :width="332"
+  :height="774.66"
+  bg-color-class="bg-white"
+  extra-class="font-display"
+  :shadow="true"
+>
+  <!-- 页面内容 -->
+</FixedAspectContainer>
+```
 
 ### Component Reusability Guidelines
 1. **提取通用样式**: When similar styling appears across multiple components, extract it into a reusable component
@@ -113,17 +183,25 @@ All page-level components must use the `FixedAspectContainer` component with the
 ### Layout Architecture
 ```
 div#app (100vw × 100vh, flex centered)
-└── div#main-display-block (332 × 774.66px, fixed aspect ratio)
+└── div#main-display-block (300 × 600px 默认 / 332 × 774.66px 规划, fixed aspect ratio)
     ├── Header (sticky if needed)
     ├── Main content (scrollable if exceeds height)
     └── Footer (optional)
 ```
 
+#### 布局说明
+1. **#app容器**: 100%视口，flex居中布局，通过 `useViewportOverflow` 智能适配
+2. **主显示块**: 固定尺寸容器，当前使用默认300×600px
+3. **内部结构**: 头部（固定）+ 主内容（滚动）+ 底部（固定）
+4. **响应式处理**: 内容超出时自动切换为顶部对齐，确保内容可见
+
 ### Development Workflow for Layout Changes
-1. **验证尺寸**: Always check that container dimensions match `332 × 774.66px`
-2. **检查溢出**: Ensure content does not overflow to `div#app` (use browser devtools)
-3. **测试响应性**: Verify layout works at different viewport sizes
-4. **更新静态文件**: Remember to update corresponding HTML files in `/_page_*/` directories
+1. **验证尺寸**: 检查容器尺寸是否符合预期（默认300×600px或规划332×774.66px）
+2. **检查溢出**: 确保内容不溢出到 `div#app`（使用浏览器开发者工具）
+3. **测试响应性**: 验证布局在不同视口尺寸下的表现
+4. **更新静态文件**: 更新 `/_page_*/` 目录中的对应HTML文件（使用规划尺寸）
+5. **测试Composables**: 验证 `useViewportOverflow` 是否正确处理视口溢出
+6. **检查交互**: 测试长按交互（250ms阈值）和视觉反馈
 
 ### Browser Automation & Debugging Guidelines
 When making frontend changes, use these verification steps:
@@ -134,10 +212,19 @@ When making frontend changes, use these verification steps:
 
 ### Code Change Patterns
 Based on our collaboration, follow these patterns:
-1. **组件优先**: Create reusable components before duplicating code
-2. **渐进增强**: Start with basic functionality, then add features incrementally
-3. **验证驱动**: Make changes, then immediately verify with browser tools
-4. **文档同步**: Update instructions when establishing new patterns
+1. **组件优先**: 创建可复用组件，避免代码重复
+2. **渐进增强**: 从基础功能开始，逐步添加特性
+3. **验证驱动**: 修改后立即使用浏览器工具验证
+4. **文档同步**: 建立新模式时更新文档
+5. **尺寸一致**: 保持FixedAspectContainer尺寸一致性
+6. **交互优化**: 确保长按交互（250ms）和视觉反馈正常工作
+7. **状态管理**: 为未来Pinia集成预留接口
+
+#### 实际开发模式
+- **Composables模式**: 使用 `useLongPress` 和 `useViewportOverflow` 封装复杂逻辑
+- **四层组件架构**: MessageBubble → BasicMessageBubble → Assistant/UserMessageBubble
+- **自定义阴影系统**: 使用自定义阴影值增强Material Design 3效果
+- **响应式适配**: 通过composables智能处理布局适配
 
 ---
 
@@ -176,10 +263,23 @@ npm run build
 | [backend/src/config/general.py](../backend/src/config/general.py) | All path/model constants |
 | [backend/src/smart_triager/triager/workflow.py](../backend/src/smart_triager/triager/workflow.py) | Reference implementation of a multi-agent workflow |
 | [backend/src/router/triager.py](../backend/src/router/triager.py) | Reference implementation of a feature router |
-| [frontend/src/main.js](../frontend/src/main.js) | Plugin registration (Pinia, Router, Vuetify) |
-| [frontend/src/components/FixedAspectContainer.vue](../frontend/src/components/FixedAspectContainer.vue) | Reusable fixed-size container component for all pages |
-| [frontend/src/views/HomeView.vue](../frontend/src/views/HomeView.vue) | Reference implementation of page using FixedAspectContainer |
-| [frontend/src/views/SettingsView.vue](../frontend/src/views/SettingsView.vue) | Settings page implementation with consistent layout |
-| [frontend/src/style.css](../frontend/src/style.css) | Global styles and div#app layout configuration |
-| [frontend/docs/ui_design_aesthetics.md](../frontend/docs/ui_design_aesthetics.md) | Comprehensive UI design system documentation with visual guidelines |
-| [frontend/docs/ui_design_principles.md](../frontend/docs/ui_design_principles.md) | Core UI design principles and development guidelines |
+| [frontend/src/main.js](../frontend/src/main.js) | 应用入口，插件注册（Pinia, Router, Vuetify） |
+| [frontend/src/components/FixedAspectContainer.vue](../frontend/src/components/FixedAspectContainer.vue) | 固定尺寸页面容器组件，所有页面必须使用 |
+| [frontend/src/views/HomeView.vue](../frontend/src/views/HomeView.vue) | 主页实现，包含语音交互和消息对话 |
+| [frontend/src/views/SettingsView.vue](../frontend/src/views/SettingsView.vue) | 设置页面实现，包含完整设置组件 |
+| [frontend/src/style.css](../frontend/src/style.css) | 全局样式和div#app布局配置 |
+| [frontend/src/router/index.js](../frontend/src/router/index.js) | 路由配置，主页+设置页懒加载 |
+| [frontend/src/composables/useLongPress.js](../frontend/src/composables/useLongPress.js) | 长按交互逻辑封装，250ms阈值 |
+| [frontend/src/composables/useViewportOverflow.js](../frontend/src/composables/useViewportOverflow.js) | 视口溢出检测和智能适配 |
+| [frontend/src/components/AppBottomNav.vue](../frontend/src/components/AppBottomNav.vue) | 底部导航栏+FAB麦克风按钮 |
+| [frontend/src/components/message-bubbles/](../frontend/src/components/message-bubbles/) | 四层消息气泡组件架构 |
+| [frontend/src/components/settings/](../frontend/src/components/settings/) | 设置页面专用组件库 |
+| [frontend/docs/ui_design_aesthetics.md](../frontend/docs/ui_design_aesthetics.md) | 完整的UI设计系统文档（版本1.1.0） |
+| [frontend/docs/ui_design_principles.md](../frontend/docs/ui_design_principles.md) | 核心设计原则和开发指南（版本1.1.0） |
+
+### 前端架构关键点
+1. **固定尺寸容器模式**: 所有页面使用 `FixedAspectContainer`，默认300×600px，规划332×774.66px
+2. **Composables模式**: `useLongPress`（250ms长按）和 `useViewportOverflow`（视口适配）
+3. **四层组件架构**: MessageBubble → BasicMessageBubble → Assistant/UserMessageBubble
+4. **自定义阴影系统**: 增强Material Design 3效果，区分交互状态
+5. **响应式适配**: 智能检测内容溢出，自动调整布局对齐方式
