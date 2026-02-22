@@ -88,6 +88,52 @@ Use **Vuetify components** (`v-btn`, `v-card`, etc.) for structure and interacti
 
 ---
 
+## Frontend Layout & Component Principles
+
+### Fixed Aspect Ratio Container Pattern
+All page-level components must use the `FixedAspectContainer` component with these specifications:
+1. **统一尺寸**: All pages use fixed dimensions of `332 × 774.66px` (9:21 aspect ratio)
+2. **标识ID**: The container has `id="main-display-block"` for consistent targeting
+3. **视觉一致性**: All containers use `bg-white` background and `shadow-2xl` shadow
+4. **溢出控制**: Content must NOT overflow outside the container. Use `overflow-y: auto` for scrollable content within the container bounds.
+
+### Component Reusability Guidelines
+1. **提取通用样式**: When similar styling appears across multiple components, extract it into a reusable component
+2. **参数化配置**: Make components configurable via props (e.g., `width`, `height`, `bg-color-class`, `shadow`)
+3. **统一接口**: Similar components should have consistent prop interfaces
+4. **文档化原则**: Document the design decisions and constraints in this file
+
+### Layout Architecture
+```
+div#app (100vw × 100vh, flex centered)
+└── div#main-display-block (332 × 774.66px, fixed aspect ratio)
+    ├── Header (sticky if needed)
+    ├── Main content (scrollable if exceeds height)
+    └── Footer (optional)
+```
+
+### Development Workflow for Layout Changes
+1. **验证尺寸**: Always check that container dimensions match `332 × 774.66px`
+2. **检查溢出**: Ensure content does not overflow to `div#app` (use browser devtools)
+3. **测试响应性**: Verify layout works at different viewport sizes
+4. **更新静态文件**: Remember to update corresponding HTML files in `/_page_*/` directories
+
+### Browser Automation & Debugging Guidelines
+When making frontend changes, use these verification steps:
+1. **尺寸验证**: Use `mcp_io_github_chr_evaluate_script` to check container dimensions and overflow status
+2. **样式检查**: Verify computed styles match expected values (background, shadow, etc.)
+3. **导航测试**: Test page transitions and ensure consistent layout across routes
+4. **实时重载**: Use browser navigation tools to see changes immediately
+
+### Code Change Patterns
+Based on our collaboration, follow these patterns:
+1. **组件优先**: Create reusable components before duplicating code
+2. **渐进增强**: Start with basic functionality, then add features incrementally
+3. **验证驱动**: Make changes, then immediately verify with browser tools
+4. **文档同步**: Update instructions when establishing new patterns
+
+---
+
 ## Developer Workflows
 
 ### Backend setup (Ubuntu 24.04 / Python 3.10)
@@ -124,3 +170,7 @@ npm run build
 | [backend/src/smart_triager/triager/workflow.py](../backend/src/smart_triager/triager/workflow.py) | Reference implementation of a multi-agent workflow |
 | [backend/src/router/triager.py](../backend/src/router/triager.py) | Reference implementation of a feature router |
 | [frontend/src/main.js](../frontend/src/main.js) | Plugin registration (Pinia, Router, Vuetify) |
+| [frontend/src/components/FixedAspectContainer.vue](../frontend/src/components/FixedAspectContainer.vue) | Reusable fixed-size container component for all pages |
+| [frontend/src/views/HomeView.vue](../frontend/src/views/HomeView.vue) | Reference implementation of page using FixedAspectContainer |
+| [frontend/src/views/SettingsView.vue](../frontend/src/views/SettingsView.vue) | Settings page implementation with consistent layout |
+| [frontend/src/style.css](../frontend/src/style.css) | Global styles and div#app layout configuration |

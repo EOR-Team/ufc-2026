@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<title>Design Comparison</title>
+<style>
+  body { margin:0; background:#1a1a1a; font-family:sans-serif; color:white; }
+  h2 { text-align:center; margin:10px 0 6px; font-size:13px; color:#aaa; }
+  .grid { display:flex; gap:16px; padding:16px; justify-content:center; flex-wrap:wrap; }
+  .col { display:flex; flex-direction:column; align-items:center; }
+  iframe { border:none; border-radius:12px; box-shadow:0 4px 24px #0008; }
+  img { border-radius:12px; box-shadow:0 4px 24px #0008; max-height:844px; width:auto; }
+  .label { font-size:11px; color:#888; margin:6px 0 10px; text-transform:uppercase; letter-spacing:.05em; }
+</style>
+</head>
+<body>
+<div class="grid">
+  <div class="col">
+    <div class="label">🎨 设计稿 — 语音助手</div>
+    <img src="/design_main.png" style="height:844px"/>
+  </div>
+  <div class="col">
+    <div class="label">💻 当前实现 — 语音助手</div>
+    <iframe src="http://[::1]:5173/" width="390" height="844"></iframe>
+  </div>
+  <div class="col">
+    <div class="label">🎨 设计稿 — 设置</div>
+    <img src="/design_settings.png" style="height:844px"/>
+  </div>
+  <div class="col">
+    <div class="label">💻 当前实现 — 设置</div>
+    <iframe src="http://[::1]:5173/settings" width="390" height="844"></iframe>
+  </div>
+</div>
+</body>
+</html>
