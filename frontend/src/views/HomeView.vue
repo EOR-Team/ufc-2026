@@ -1,13 +1,13 @@
 <template>
   <FixedAspectContainer
-    bg-color-class="bg-white dark:bg-slate-900"
-    extra-class="font-display text-slate-900 dark:text-slate-100"
+    bg-color-class="bg-white"
+    extra-class="font-display text-slate-900"
     :shadow="true"
     :overflow-hidden="false"
   >
     <!-- 顶部标题栏 -->
     <header class="flex items-center pt-11 pb-8 px-6 justify-center">
-      <p class="text-3xl tracking-tight text-slate-900 dark:text-white">登录</p>
+      <p class="text-3xl tracking-tight text-slate-900">登录</p>
     </header>
 
     <!-- 主内容区 -->
@@ -20,7 +20,7 @@
         <div class="absolute inset-16 rounded-full border border-primary/30"></div>
 
         <!-- 主插画容器 -->
-        <div class="absolute inset-0 flex items-center justify-center overflow-hidden rounded-3xl bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-800">
+        <div class="absolute inset-0 flex items-center justify-center overflow-hidden rounded-3xl bg-white shadow-xl border border-slate-200">
           <!-- 摄像头画面（有摄像头时显示） -->
           <video
             v-show="cameraCount > 0"
@@ -64,7 +64,7 @@
 
       <!-- 使用说明 -->
       <div class="text-center mb-8 space-y-2">
-        <p class="text-slate-500 dark:text-slate-400 text-sm">请正对屏幕并保持环境光线充足</p>
+        <p class="text-slate-500 text-sm">请正对屏幕并保持环境光线充足</p>
       </div>
 
       <!-- 操作按钮 -->
@@ -83,9 +83,9 @@
 
     <!-- 底部安全徽章 -->
     <footer class="p-8 mb-6 text-center">
-      <div class="inline-flex items-center gap-2 px-4 py-2 bg-transparent dark:bg-transparent rounded-full">
+      <div class="inline-flex items-center gap-2 px-4 py-2 bg-transparent rounded-full">
         <span class="material-symbols-outlined text-primary text-sm">verified_user</span>
-        <span class="text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide uppercase">AI 安全加密保护</span>
+        <span class="text-xs text-slate-500 font-medium tracking-wide uppercase">AI 安全加密保护</span>
       </div>
     </footer>
   </FixedAspectContainer>

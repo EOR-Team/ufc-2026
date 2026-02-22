@@ -307,22 +307,6 @@ transition-transform: 变换过渡
 - 水平内容：`overflow-x: hidden`
 - 长文本：自动换行，最大宽度限制
 
-### 2. 暗色模式支持
-
-> ⚠️ **当前状态：尚未实现。** 代码中不存在 `dark:` 类、主题切换逻辑或相关 Store。以下为预留方案，供后续扩展参考。
-
-#### 颜色变量（规划）
-```css
-text-slate-900 dark:text-slate-100
-bg-white dark:bg-background-dark  /* --color-background-dark: #14161e */
-border-slate-100 dark:border-slate-800
-```
-
-#### 切换策略（规划）
-- 基于系统偏好（`prefers-color-scheme`）或用户设置
-- 平滑过渡，保持对比度
-- 图标和图片适配
-
 ---
 
 ## 可访问性规范
@@ -511,7 +495,6 @@ useViewportOverflow()
 2. **状态管理**：Pinia stores 目录为空，待实现
 3. **语音功能**：语音识别和合成集成
 4. **导航界面**：医院地图导航功能
-5. **暗色模式**：代码中已预留但未实现
 
 ### 🎯 技术特点
 1. **现代化技术栈**：使用最新的前端技术

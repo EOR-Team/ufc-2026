@@ -17,6 +17,7 @@ const vuetify = createVuetify({
   },
   theme: {
     defaultTheme: 'light',
+    variations: false, // 禁用主题变化，防止响应系统暗色模式
     themes: {
       light: {
         colors: {

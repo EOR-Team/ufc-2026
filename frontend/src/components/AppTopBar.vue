@@ -23,7 +23,7 @@ const emit = defineEmits(['settings-click'])
     </div>
     <button
       @click="emit('settings-click')"
-      class="flex items-center justify-center rounded-full w-10 h-10 hover:bg-primary/10 transition-colors text-slate-600"
+      class="flex items-center justify-center rounded-full w-10 h-10 hover:bg-primary/10 transition-colors !text-slate-600"
     >
       <span class="material-symbols-outlined">settings</span>
     </button>
