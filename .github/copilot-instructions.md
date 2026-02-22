@@ -86,6 +86,13 @@ export const useCounterStore = defineStore('counter', () => {
 ### Styling approach
 Use **Vuetify components** (`v-btn`, `v-card`, etc.) for structure and interactions. Use **Tailwind utility classes** for spacing, typography, layout that falls outside Vuetify. Do not mix custom CSS where utilities suffice.
 
+### UI Design Documentation
+For comprehensive UI design guidelines, refer to:
+- **[ui_design_aesthetics.md](../frontend/docs/ui_design_aesthetics.md)** - Complete UI design system with visual specifications
+- **[ui_design_principles.md](../frontend/docs/ui_design_principles.md)** - Core design principles and development guidelines
+
+These documents cover color systems, typography, spacing, component specifications, and interaction patterns.
+
 ---
 
 ## Frontend Layout & Component Principles
@@ -174,3 +181,5 @@ npm run build
 | [frontend/src/views/HomeView.vue](../frontend/src/views/HomeView.vue) | Reference implementation of page using FixedAspectContainer |
 | [frontend/src/views/SettingsView.vue](../frontend/src/views/SettingsView.vue) | Settings page implementation with consistent layout |
 | [frontend/src/style.css](../frontend/src/style.css) | Global styles and div#app layout configuration |
+| [frontend/docs/ui_design_aesthetics.md](../frontend/docs/ui_design_aesthetics.md) | Comprehensive UI design system documentation with visual guidelines |
+| [frontend/docs/ui_design_principles.md](../frontend/docs/ui_design_principles.md) | Core UI design principles and development guidelines |
