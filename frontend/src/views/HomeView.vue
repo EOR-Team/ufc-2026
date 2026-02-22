@@ -6,8 +6,8 @@
     :overflow-hidden="false"
   >
     <!-- 顶部标题栏 -->
-    <header class="flex items-center pt-11 pb-6 px-6 justify-center">
-      <h1 class="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">登录</h1>
+    <header class="flex items-center pt-11 pb-8 px-6 justify-center">
+      <p class="text-3xl tracking-tight text-slate-900 dark:text-white">登录</p>
     </header>
 
     <!-- 主内容区 -->
@@ -32,10 +32,10 @@
             </div>
 
             <!-- 扫描点 -->
-            <div class="absolute top-1/4 left-1/3 w-2 h-2 bg-primary rounded-full glow-effect"></div>
-            <div class="absolute top-1/3 right-1/4 w-2 h-2 bg-primary rounded-full glow-effect"></div>
-            <div class="absolute bottom-1/3 left-1/4 w-2 h-2 bg-primary rounded-full glow-effect"></div>
-            <div class="absolute bottom-1/4 right-1/2 w-2 h-2 bg-primary rounded-full glow-effect"></div>
+            <div class="absolute top-1/4 left-1/3 w-2 h-2 bg-primary rounded-full glow-effect chaos-motion-1"></div>
+            <div class="absolute top-1/3 right-1/4 w-2 h-2 bg-primary rounded-full glow-effect chaos-motion-2"></div>
+            <div class="absolute bottom-1/3 left-1/4 w-2 h-2 bg-primary rounded-full glow-effect chaos-motion-3"></div>
+            <div class="absolute bottom-1/4 right-1/2 w-2 h-2 bg-primary rounded-full glow-effect chaos-motion-4"></div>
 
             <!-- 扫描线覆盖层 -->
             <div class="scan-line top-1/4 opacity-50"></div>
@@ -50,7 +50,7 @@
       </div>
 
       <!-- 使用说明 -->
-      <div class="text-center mb-10 space-y-2">
+      <div class="text-center mb-8 space-y-2">
         <p class="text-slate-500 dark:text-slate-400 text-sm">请正对屏幕并保持环境光线充足</p>
       </div>
 
@@ -69,7 +69,7 @@
     </main>
 
     <!-- 底部安全徽章 -->
-    <footer class="p-8 text-center">
+    <footer class="p-8 mb-6 text-center">
       <div class="inline-flex items-center gap-2 px-4 py-2 bg-transparent dark:bg-transparent rounded-full">
         <span class="material-symbols-outlined text-primary text-sm">verified_user</span>
         <span class="text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide uppercase">AI 安全加密保护</span>
@@ -134,13 +134,95 @@ const handleFaceLogin = async () => {
   }
 }
 
+/* 混沌运动动画 - 小范围旋转混沌效果 */
+.chaos-motion-1 {
+  animation: 
+    glow 2s ease-in-out infinite alternate,
+    chaosOrbit1 3s ease-in-out infinite;
+}
+
+.chaos-motion-2 {
+  animation: 
+    glow 2s ease-in-out infinite alternate,
+    chaosOrbit2 2.5s ease-in-out infinite;
+}
+
+.chaos-motion-3 {
+  animation: 
+    glow 2s ease-in-out infinite alternate,
+    chaosOrbit3 4.5s ease-in-out infinite;
+}
+
+.chaos-motion-4 {
+  animation: 
+    glow 2s ease-in-out infinite alternate,
+    chaosOrbit4 5s ease-in-out infinite;
+}
+
+@keyframes chaosOrbit1 {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(4px, -6px) rotate(90deg);
+  }
+  50% {
+    transform: translate(-3px, 5px) rotate(180deg);
+  }
+  75% {
+    transform: translate(5px, -4px) rotate(270deg);
+  }
+}
+
+@keyframes chaosOrbit2 {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(-5px, 3px) rotate(-90deg);
+  }
+  50% {
+    transform: translate(6px, -4px) rotate(-180deg);
+  }
+  75% {
+    transform: translate(-4px, 5px) rotate(-270deg);
+  }
+}
+
+@keyframes chaosOrbit3 {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(3px, 4px) rotate(120deg);
+  }
+  50% {
+    transform: translate(-4px, -3px) rotate(240deg);
+  }
+  75% {
+    transform: translate(5px, 2px) rotate(360deg);
+  }
+}
+
+@keyframes chaosOrbit4 {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(-2px, -5px) rotate(-120deg);
+  }
+  50% {
+    transform: translate(4px, 3px) rotate(-240deg);
+  }
+  75% {
+    transform: translate(-3px, -4px) rotate(-360deg);
+  }
+}
+
 /* 发光效果 */
 .glow-effect {
   box-shadow: 0 0 25px 5px rgba(66, 82, 179, 0.2);
-  animation: glow 2s ease-in-out infinite alternate;
-}
 
-@keyframes glow {
   from {
     box-shadow: 0 0 25px 5px rgba(66, 82, 179, 0.2);
   }
