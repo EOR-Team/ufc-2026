@@ -263,6 +263,7 @@ npm run build
 | [backend/src/config/general.py](../backend/src/config/general.py) | All path/model constants |
 | [backend/src/smart_triager/triager/workflow.py](../backend/src/smart_triager/triager/workflow.py) | Reference implementation of a multi-agent workflow |
 | [backend/src/router/triager.py](../backend/src/router/triager.py) | Reference implementation of a feature router |
+| [frontend/docs/solved_issues.md](../frontend/docs/solved_issues.md) | 已解决问题的记录和解决方案，特别是CSS动画与滚动冲突问题 |
 | [frontend/src/main.js](../frontend/src/main.js) | 应用入口，插件注册（Pinia, Router, Vuetify） |
 | [frontend/src/components/FixedAspectContainer.vue](../frontend/src/components/FixedAspectContainer.vue) | 固定尺寸页面容器组件，所有页面必须使用 |
 | [frontend/src/views/HomeView.vue](../frontend/src/views/HomeView.vue) | 主页实现，包含语音交互和消息对话 |
@@ -283,3 +284,38 @@ npm run build
 3. **四层组件架构**: MessageBubble → BasicMessageBubble → Assistant/UserMessageBubble
 4. **自定义阴影系统**: 增强Material Design 3效果，区分交互状态
 5. **响应式适配**: 智能检测内容溢出，自动调整布局对齐方式
+
+---
+
+## 问题解决与知识库
+
+### 已解决问题记录
+项目维护了一个问题解决知识库，记录已解决的技术问题及其解决方案：
+
+#### 关键问题记录
+- **[CSS动画与滚动功能冲突](../backend/docs/solved_issues.md)**: Vue Transition动画导致ConversationList无法滚动的根本原因分析和解决方案
+  - **问题**: 添加页面过渡动画后，滚动功能失效
+  - **根本原因**: CSS动画的`position: absolute`和`transform`属性与滚动容器的冲突
+  - **解决方案**: 三层嵌套容器架构，分离动画职责和滚动职责
+  - **经验教训**: 不要混合CSS动画和滚动功能，使用固定高度优于动态高度
+
+#### 问题解决流程
+1. **问题识别**: 现象观察和初步排查
+2. **根本原因分析**: 深入分析CSS属性、DOM结构和浏览器行为
+3. **方案设计**: 提出多个解决方案并评估优缺点
+4. **实施与验证**: 代码修改和功能验证
+5. **文档化**: 记录问题原因、解决方案和经验教训
+
+#### 最佳实践总结
+- **职责分离**: 每个容器只负责一件事（动画、定位、滚动）
+- **固定高度策略**: 对于滚动容器，使用明确的高度而非百分比
+- **CSS保护机制**: 使用`!important`规则确保关键CSS属性优先级
+- **动态状态控制**: 根据动画状态智能切换CSS类
+
+### 开发工作流建议
+当遇到类似的前端布局或动画问题时，参考以下步骤：
+1. 首先检查`solved_issues.md`中是否有类似问题的记录
+2. 使用浏览器开发者工具分析DOM结构和CSS属性
+3. 应用"职责分离"原则设计解决方案
+4. 实施后进行全面测试（动画、滚动、响应式）
+5. 将新问题和解决方案记录到知识库中

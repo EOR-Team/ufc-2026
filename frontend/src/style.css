@@ -155,6 +155,25 @@ button:focus-visible {
   height: 100%;
   top: 0;
   left: 0;
+  /* 性能优化 */
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+  /* 重要：允许内容溢出，让滚动容器正常工作 */
+  overflow: visible;
+}
+
+/* 滚动容器样式 - 确保在动画元素内部正常滚动 */
+.slide-left-enter-active .overflow-y-auto,
+.slide-left-leave-active .overflow-y-auto,
+.slide-right-enter-active .overflow-y-auto,
+.slide-right-leave-active .overflow-y-auto {
+  /* 滚动容器在动画期间保持正常 */
+  position: static;
+  transform: none !important;
+  /* 确保滚动功能不受影响 */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
 
 /* navigation → medical：旧内容左出，新内容右入 */
@@ -168,3 +187,19 @@ button:focus-visible {
 .slide-right-leave-to   { transform: translateX(100%); }
 .slide-right-enter-to,
 .slide-right-leave-from { transform: translateX(0); }
+
+/* 滚动性能优化 */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch; /* 移动端平滑滚动 */
+  scroll-behavior: smooth;
+}
+
+/* 隐藏滚动条但保持功能 */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

@@ -37,6 +37,7 @@ const messages = ref([
   <FixedAspectContainer
     bg-color-class="bg-white"
     extra-class="font-display"
+    :overflow-hidden="false"
   >
     <!-- 顶部应用栏 -->
     <AppTopBar
@@ -45,10 +46,26 @@ const messages = ref([
 
     <!-- 主内容区（相对定位，供 VoiceOverlay 绝对定位参考） -->
     <div class="flex-1 flex flex-col relative min-h-0">
-      <!-- 滑动切换容器：overflow-hidden 裁切滑出的内容 -->
-      <div class="flex-1 relative overflow-hidden min-h-0">
-        <transition :name="slideTransition">
-          <ConversationList :key="chatMode.mode" :messages="messages" />
+      <!-- 动画容器：动态控制溢出，动画期间隐藏溢出，非动画期间允许溢出 -->
+      <div 
+        class="relative flex-1 min-h-0"
+        :class="{ 'overflow-hidden': chatMode.isAnimating }"
+      >
+        <!-- Vue Transition：负责动画控制 -->
+        <transition 
+          :name="slideTransition"
+          @before-enter="chatMode.startAnimation()"
+          @after-enter="chatMode.endAnimation()"
+          @before-leave="chatMode.startAnimation()"
+          @after-leave="chatMode.endAnimation()"
+        >
+          <!-- 定位容器：确保填满空间（CSS中已设置position: absolute） -->
+          <div :key="chatMode.mode">
+            <!-- 滚动容器：独立处理滚动，使用固定高度而非100% -->
+            <div class="overflow-y-auto no-scrollbar" style="height: 471px;">
+              <ConversationList :messages="messages" />
+            </div>
+          </div>
         </transition>
       </div>
       <VoiceOverlay :visible="isListening" />

@@ -20,7 +20,7 @@ defineProps({
 <template>
   <div
     data-conversation-list
-    class="flex-1 overflow-y-auto no-scrollbar min-h-0"
+    class="h-full"
     style="padding: 12px;"
   >
     <div class="flex flex-col gap-3">
@@ -35,6 +35,5 @@ defineProps({
 </template>
 
 <style scoped>
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+/* 滚动样式现在由外层容器处理 */
 </style>

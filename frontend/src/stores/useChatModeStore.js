@@ -13,6 +13,8 @@ export const useChatModeStore = defineStore('chatMode', () => {
   // navigation → medical 为向左（新内容从右侧滑入）
   // medical → navigation 为向右（新内容从左侧滑入）
   const direction = ref('left')
+  // 动画状态跟踪
+  const isAnimating = ref(false)
 
   const modeLabel = computed(() => {
     return mode.value === 'navigation' ? '智能寻路' : '智能医患'
@@ -27,9 +29,19 @@ export const useChatModeStore = defineStore('chatMode', () => {
   function reset() {
     direction.value = 'left'
     mode.value = 'navigation'
+    isAnimating.value = false
   }
 
-  return { mode, direction, modeLabel, setMode, reset }
+  // 动画控制方法
+  function startAnimation() {
+    isAnimating.value = true
+  }
+
+  function endAnimation() {
+    isAnimating.value = false
+  }
+
+  return { mode, direction, modeLabel, isAnimating, setMode, reset, startAnimation, endAnimation }
 })
 
 // 让 Vite HMR 正确热替换 Pinia store，避免旧实例缓存导致新增状态字段无效
