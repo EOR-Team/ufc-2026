@@ -17,7 +17,7 @@
       <div class="w-2 bg-primary rounded-full animate-wave-4 opacity-60"></div>
       <div class="w-2 bg-primary rounded-full animate-wave-5 opacity-40"></div>
     </div>
-    <p class="mt-3 text-primary font-medium tracking-wide text-sm uppercase bg-primary/10 backdrop-blur-sm rounded-full px-4 py-0.5 border border-primary/20">正在倾听...</p>
+    <p class="mt-3 text-primary font-medium tracking-wide text-sm uppercase bg-primary/10 backdrop-blur-sm rounded-full px-5 py-1 border border-primary/20">正在倾听...</p>
   </div>
 </template>
 

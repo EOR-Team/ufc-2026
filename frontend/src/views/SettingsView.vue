@@ -16,8 +16,6 @@ const speechRate = ref(50) // 50% = 1.0x
 
 <template>
   <FixedAspectContainer 
-    width="332"
-    :height="774.66"
     bg-color-class="bg-white"
     extra-class="font-display text-slate-900 antialiased overflow-y-auto"
     :shadow="true"

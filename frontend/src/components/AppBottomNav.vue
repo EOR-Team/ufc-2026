@@ -26,7 +26,7 @@ const preventClick = (e) => e.preventDefault()
 </script>
 
 <template>
-  <nav class="relative bg-white border-t border-primary/10 px-3 py-3 flex items-center justify-between z-40">
+  <nav class="relative bg-white border-t border-primary/10 px-3 py-2 flex items-center justify-between z-40">
 
     <!-- 智能寻路 -->
     <div class="flex flex-col items-center gap-1 flex-1 cursor-pointer hover:opacity-80 transition-opacity">
@@ -36,7 +36,7 @@ const preventClick = (e) => e.preventDefault()
 
     <!-- Center FAB -->
     <div class="relative flex-1 flex justify-center">
-      <div class="absolute -top-14">
+      <div class="absolute -top-16">
         <button
           class="relative flex flex-col items-center justify-center w-20 h-20 rounded-full text-white shadow-[0_8px_20px_rgba(0,0,0,0.35)] active:scale-95 transition-all z-10 border-4 border-white bg-primary hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
           style="border-radius: 9999px;"
@@ -58,7 +58,7 @@ const preventClick = (e) => e.preventDefault()
           >
             mic
           </span>
-          <span class="text-[10px] font-medium text-white/90 opacity-90 tracking-tight">
+          <span class="text-[10px] font-medium text-white/90 opacity-90 tracking-tight select-none">
             长按说话
           </span>
         </button>

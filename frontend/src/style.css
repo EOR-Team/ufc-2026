@@ -48,10 +48,13 @@ body {
   padding-bottom: 20px;
 }
 
-/* useViewportOverflow 在内容超出时为 #main-display-block 添加此类 */
-#main-display-block.content-exceeds-viewport {
-  align-items: flex-start;
+/* 禁止所有 Material Symbols 图标被选中（长按时不触发文本选择） */
+.material-symbols-outlined {
+  user-select: none;
+  -webkit-user-select: none;
 }
+
+
 
 a {
   font-weight: 500;

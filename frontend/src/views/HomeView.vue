@@ -29,8 +29,6 @@ const messages = ref([
 
 <template>
   <FixedAspectContainer
-    width="332"
-    :height="774.66"
     bg-color-class="bg-white"
     extra-class="font-display"
   >
@@ -53,6 +51,6 @@ const messages = ref([
       @press-end="end"
     />
 
-    <div class="h-3 bg-white" />
+    <div class="h-1 bg-white" />
   </FixedAspectContainer>
 </template>

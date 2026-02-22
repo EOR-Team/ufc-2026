@@ -47,8 +47,8 @@ const layoutClasses = computed(() => {
 // 根据是否为助手消息决定气泡圆角类
 const bubbleClasses = computed(() => {
   return props.isAssistant
-    ? 'bg-primary/10 text-slate-800 px-3 py-2 rounded-xl rounded-tl-none shadow-sm'
-    : 'bg-slate-100 text-slate-800 px-3 py-2 rounded-xl rounded-tr-none shadow-sm'
+    ? 'bg-primary/10 text-slate-800 px-4 py-3 rounded-xl rounded-tl-none shadow-sm'
+    : 'bg-slate-100 text-slate-800 px-4 py-3 rounded-xl rounded-tr-none shadow-sm'
 })
 
 // 根据是否为助手消息决定名称标签对齐
@@ -60,7 +60,7 @@ const nameLabelClasses = computed(() => {
 </script>
 
 <template>
-  <div :class="layoutClasses" class="mt-2 mb-2 ml-3 mr-3">
+  <div :class="layoutClasses" class="mt-2 mb-2 ml-1 mr-2">
     <!-- 图标 -->
     <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
       <span class="material-symbols-outlined text-primary">
@@ -77,7 +77,7 @@ const nameLabelClasses = computed(() => {
 
       <!-- 消息气泡 -->
       <div :class="bubbleClasses">
-        <p class="text-base leading-relaxed m-0">
+        <p class="leading-relaxed m-0 whitespace-pre-wrap">
           {{ message }}
         </p>
       </div>
@@ -90,5 +90,6 @@ const nameLabelClasses = computed(() => {
 p {
   word-break: break-word;
   overflow-wrap: break-word;
+  font-size: 14.5px;
 }
 </style>
