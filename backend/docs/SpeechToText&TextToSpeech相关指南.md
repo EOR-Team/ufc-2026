@@ -160,7 +160,7 @@ tts = TTS(language = "ZH",device = "cpu")
 合成音频并输出：
 
 ```python
-self.tts.tts_to_file(sentence,speaker_id=0,output_path=temp_path)
+tts.tts_to_file(sentence,speaker_id=0,output_path=temp_path)
 audio , sr = sf.read(temp_path)
 sf.write(file_name, audio, sample_rate)
 ```
