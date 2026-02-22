@@ -9,6 +9,10 @@
  *   press-start — 用户开始按下 FAB 时触发
  *   press-end   — 用户松开或移出 FAB 时触发
  */
+import { useChatModeStore } from '@/stores/useChatModeStore'
+
+const chatMode = useChatModeStore()
+
 const props = defineProps({
   isListening: {
     type: Boolean,
@@ -29,9 +33,19 @@ const preventClick = (e) => e.preventDefault()
   <nav class="relative bg-white border-t border-primary/10 px-3 py-2 flex items-center justify-between z-40">
 
     <!-- 智能寻路 -->
-    <div class="flex flex-col items-center gap-1 flex-1 cursor-pointer hover:opacity-80 transition-opacity">
-      <span class="material-symbols-outlined text-slate-500">map</span>
-      <span class="text-[10px] font-medium text-slate-500">智能寻路</span>
+    <div
+      class="flex flex-col items-center gap-1 flex-1 cursor-pointer transition-opacity"
+      :class="chatMode.mode === 'navigation' ? 'opacity-100' : 'opacity-50 hover:opacity-75'"
+      @click="chatMode.setMode('navigation')"
+    >
+      <span
+        class="material-symbols-outlined transition-colors"
+        :class="chatMode.mode === 'navigation' ? 'text-primary' : 'text-slate-500'"
+      >map</span>
+      <span
+        class="text-[10px] font-medium transition-colors"
+        :class="chatMode.mode === 'navigation' ? 'text-primary' : 'text-slate-500'"
+      >智能寻路</span>
     </div>
 
     <!-- Center FAB -->
@@ -66,9 +80,19 @@ const preventClick = (e) => e.preventDefault()
     </div>
 
     <!-- 智能医患 -->
-    <div class="flex flex-col items-center gap-1 flex-1 cursor-pointer hover:opacity-80 transition-opacity">
-      <span class="material-symbols-outlined text-slate-500">medical_services</span>
-      <span class="text-[10px] font-medium text-slate-500">智能医患</span>
+    <div
+      class="flex flex-col items-center gap-1 flex-1 cursor-pointer transition-opacity"
+      :class="chatMode.mode === 'medical' ? 'opacity-100' : 'opacity-50 hover:opacity-75'"
+      @click="chatMode.setMode('medical')"
+    >
+      <span
+        class="material-symbols-outlined transition-colors"
+        :class="chatMode.mode === 'medical' ? 'text-primary' : 'text-slate-500'"
+      >medical_services</span>
+      <span
+        class="text-[10px] font-medium transition-colors"
+        :class="chatMode.mode === 'medical' ? 'text-primary' : 'text-slate-500'"
+      >智能医患</span>
     </div>
 
   </nav>

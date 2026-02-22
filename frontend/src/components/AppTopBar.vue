@@ -2,19 +2,14 @@
 /**
  * AppTopBar — 顶部应用栏
  *
- * Props:
- *   title (string) — 标题文本，默认"语音助手"
+ * 标题跟随 useChatModeStore.modeLabel 自动变化。
  *
  * Emits:
  *   settings-click — 点击设置按钮时触发
  */
-defineProps({
-  title: {
-    type: String,
-    default: '语音助手',
-  },
-})
+import { useChatModeStore } from '@/stores/useChatModeStore'
 
+const chatMode = useChatModeStore()
 const emit = defineEmits(['settings-click'])
 </script>
 
@@ -24,7 +19,7 @@ const emit = defineEmits(['settings-click'])
       <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
         <span class="material-symbols-outlined" style="font-size:18px">graphic_eq</span>
       </div>
-      <p class="text-slate-900 text-xl font-semibold tracking-tight m-0">{{ title }}</p>
+      <p class="text-slate-900 text-xl font-semibold tracking-tight m-0">{{ chatMode.modeLabel }}</p>
     </div>
     <button
       @click="emit('settings-click')"

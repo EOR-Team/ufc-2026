@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useChatModeStore } from '@/stores/useChatModeStore'
 import FixedAspectContainer from '@/components/FixedAspectContainer.vue'
 import AppTopBar from '@/components/AppTopBar.vue'
 import ConversationList from '@/components/ConversationList.vue'
@@ -10,6 +11,11 @@ import { useLongPress } from '@/composables/useLongPress'
 import { useViewportOverflow } from '@/composables/useViewportOverflow'
 
 const router = useRouter()
+const chatMode = useChatModeStore()
+const slideTransition = computed(() => `slide-${chatMode.direction}`)
+
+// 进入页面时重置为默认模式（智能寻路）
+onMounted(() => chatMode.reset())
 
 // 语音长按状态
 const { isActive: isListening, start, end } = useLongPress(250)
@@ -34,13 +40,17 @@ const messages = ref([
   >
     <!-- 顶部应用栏 -->
     <AppTopBar
-      title="语音助手"
       @settings-click="router.push({ name: 'settings' })"
     />
 
     <!-- 主内容区（相对定位，供 VoiceOverlay 绝对定位参考） -->
     <div class="flex-1 flex flex-col relative min-h-0">
-      <ConversationList :messages="messages" />
+      <!-- 滑动切换容器：overflow-hidden 裁切滑出的内容 -->
+      <div class="flex-1 relative overflow-hidden min-h-0">
+        <transition :name="slideTransition">
+          <ConversationList :key="chatMode.mode" :messages="messages" />
+        </transition>
+      </div>
       <VoiceOverlay :visible="isListening" />
     </div>
 
