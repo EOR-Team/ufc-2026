@@ -95,7 +95,7 @@ __all__ = [
 
 在提示词 **变量命名** 时，推荐命名结构为 `<agent_name>_instructions`，比如这个案例中 `requirement_collector_instructions`。
 
-**具体内容**方面，我们首先要对提示词进行分层，将提示词分为 `## Background`, `## Role`, `## Input`, `## Output`, `## Criteria` 和 `## Example` 一共六个模块。
+**具体内容**方面，我们首先要对提示词进行分层，将提示词分为 `## Background`, `## Role`, `## Input`, `## Output`, `## Criteria`, `## Requirements` 和 `## Example` 一共七个模块。
 
 #### 1. `## Background`
 
@@ -224,12 +224,12 @@ _logit_bias = build_logit_bias(
 具体的模型参数配置就看你自己了，`temperature`这个参数调整起来也没啥好方法，毕竟我们不是 OpenAI，没有人家那种配套的微调工具。
 `max_tokens`的话看着来，一般来说 4096 的取值够用了。
 
-> **重要提醒**：`agents.ModelSettings.max_tokens`这玩意表示 输入 + 输出 的总token量，所以设多一点（4096）没毛病。
+> **重要提醒**：`agents.ModelSettings.max_tokens`这玩意表示**最大输出 token 数**，只计算输出部分，不包含输入（输入 token 由 prompt 本身决定）。输入 + 输出的**总上限**是 `llama-cpp-python` 中 `Llama()` 的 `n_ctx` 参数。所以在线模型把 `max_tokens` 设到 4096 没问题；但离线模型要确保 `system prompt token数 + user input token数 + max_tokens` 不超过 `n_ctx`，否则会 segfault。
 
 声明完 agent 之后，就调用 `Runner.run` 用 **await** 关键字 异步等待原始输出结果。
 
 对于 **调用离线模型** 的函数体内部，我选择获取离线模型之后，将`model.create_chat_completion`函数 **用匿名函数** 再包装一层。目的是调用 `asyncio.to_thread` 将一个原本 **阻塞主线程** 的函数改运行到 另一个线程上，然后利用 `asyncio` 的 **协程** API 异步调用。这样做能够实现，在**不调用同一个 Llama 模型实例的情况下**，我可以同时运行多个像这样的底层API，**节约时间**。
-> `llama-cpp-python` 不支持 同一个`Llama`实例 在同一时间 的同时多次调用。
+> **重要**：`llama-cpp-python` 不支持 同一个`Llama`实例 在同一时间 的同时多次调用（非线程安全）。因此，CC 离线版与 RC 离线版**共享同一个** `get_offline_chat_model()` 实例，**不能**用 `asyncio.gather()` 并发执行，必须串行 `await`。只有两个调用分别使用**不同的模型实例**（如一个用 chat model、另一个用 reasoning model）时，才可以并发。
 
 这里也同理，**await** 完之后就得到了原始输出结果，类型为 `str`。
 
