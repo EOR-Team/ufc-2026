@@ -33,7 +33,7 @@ const speechRateLabel = computed(() => {
   >
 
     <!-- Top Navigation Bar -->
-    <header class="sticky mt-2 top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/60">
+    <header class="sticky mt-2 pb-1 top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/60">
       <div class="flex items-center justify-between px-3 h-12 max-w-2xl mx-auto">
         <button
           @click="router.back()"
