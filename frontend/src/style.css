@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #4252b3;
+  --color-background-light: #f6f6f8;
+  --font-display: "Inter", sans-serif;
+}
+
+:root {
+  font-family: "Inter", system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f6f6f8;
+}
+
+/* Vuetify のグローバル CSS が #app に text-align: center を設定するため上書き */
+#app {
+  text-align: left !important;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* 默认垂直居中 */
+  background-color: #f6f6f8;
+  overflow: auto; /* 允许滚动，当内容超出时 */
+}
+
+/* 当内容高度超过视口时，切换到顶部对齐 */
+#app.content-exceeds-viewport {
+  align-items: flex-start;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+/* 禁止 Material Symbols 图标被选中（长按时不触发文本选择） */
+.material-symbols-outlined {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 隐藏原生滚动条轨道，保留滚动能力（Material Design 移动端标准做法） */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #f9f9f9;
+  color: inherit; /* 继承父元素颜色 */
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.card {
+  padding: 2em;
+}
+
+/* 页面切换fade过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 模式切换滑动动画 */
+/* 过渡期间绝对定位，让两个元素在同一容器内叠放滑动 */
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  /* 性能优化 */
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+  /* 重要：允许内容溢出，让滚动容器正常工作 */
+  overflow: visible;
+}
+
+/* 滚动容器样式 - 确保在动画元素内部正常滚动 */
+.slide-left-enter-active .overflow-y-auto,
+.slide-left-leave-active .overflow-y-auto,
+.slide-right-enter-active .overflow-y-auto,
+.slide-right-leave-active .overflow-y-auto {
+  /* 滚动容器在动画期间保持正常 */
+  position: static;
+  transform: none !important;
+  /* 确保滚动功能不受影响 */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* navigation → medical：旧内容左出，新内容右入 */
+.slide-left-enter-from  { transform: translateX(100%); }
+.slide-left-leave-to    { transform: translateX(-100%); }
+.slide-left-enter-to,
+.slide-left-leave-from  { transform: translateX(0); }
+
+/* medical → navigation：旧内容右出，新内容左入 */
+.slide-right-enter-from { transform: translateX(-100%); }
+.slide-right-leave-to   { transform: translateX(100%); }
+.slide-right-enter-to,
+.slide-right-leave-from { transform: translateX(0); }
+
+/* 滚动性能优化 */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch; /* 移动端平滑滚动 */
+  scroll-behavior: smooth;
+}
+
+/* 隐藏滚动条但保持功能 */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
