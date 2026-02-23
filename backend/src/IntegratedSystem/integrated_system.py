@@ -7,15 +7,16 @@ class IntegratedSystem:
         self.face_system = FaceRecognitionSystem()
         self.medical_system = MedicalRecordSystem()
     
-    def enroll_new_patient(self, name, timeout=30.0):
+    def enroll_new_patient(self, name, image_path: str | None = None):
         """
-        录入新患者（人脸录入 + 创建病历）
+        录入新患者（从静态图片录入人脸并创建病历）
+        - 默认使用 `backend/assets/face/face.png`，也可通过 `image_path` 指定图片
         :param name: 患者姓名
-        :param timeout: 超时时间
+        :param image_path: 可选自定义图片路径
         :return: {"name": name, "id": id} 或 None
         """
-        # 录入人脸
-        result = self.face_system.enroll_face_realtime(name, timeout)
+        # 从图片录入人脸
+        result = self.face_system.enroll_face_realtime(name, image_path)
         
         if result:
             # 自动创建病历
@@ -24,13 +25,13 @@ class IntegratedSystem:
         
         return None
     
-    def recognize_patient(self, timeout=30.0):
+    def recognize_patient(self, image_path: str | None = None):
         """
-        识别患者
-        :param timeout: 超时时间
+        从静态图片识别患者（默认使用 `backend/assets/face/face.png`）
+        :param image_path: 可选自定义图片路径
         :return: {"name": name, "id": id} 或 None
         """
-        return self.face_system.recognize_face_realtime(timeout)
+        return self.face_system.recognize_face_realtime(image_path)
     
     def add_medical_record(self, patient_id, medical_record):
         """
@@ -64,12 +65,12 @@ def main():
     """使用示例"""
     system = IntegratedSystem()
     
-    # 录入新患者
-    result = system.enroll_new_patient("张三", timeout=30.0)
+    # 录入新患者（使用默认图片 backend/assets/face/face.png）
+    result = system.enroll_new_patient("张三")
     print(f"录入结果：{result}")
     
-    # 识别患者
-    result = system.recognize_patient(timeout=30.0)
+    # 识别患者（使用默认图片 backend/assets/face/face.png）
+    result = system.recognize_patient()
     if result:
         print(f"识别到患者：{result['name']}, ID: {result['id']}")
     
