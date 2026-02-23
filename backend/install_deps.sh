@@ -373,6 +373,44 @@ else
 fi
 
 # ========================================
+# 6.1 额外资源：NLTK 资源 & 模型文件
+# ========================================
+print_section "检查并安装 NLTK 资源与模型文件"
+
+# 指定虚拟环境下的 nltk_data 存放位置，避免与系统冲突
+VENV_NLTK_DIR="$VENV_DIR/nltk_data"
+mkdir -p "$VENV_NLTK_DIR"
+
+echo "将下载 NLTK 资源：averaged_perceptron_tagger_eng 到 $VENV_NLTK_DIR"
+"$PYTHON_CMD" - <<PY
+import nltk, os, sys
+download_dir = os.path.abspath(os.path.join(os.path.dirname(sys.executable), '..', 'nltk_data'))
+try:
+    nltk.download('averaged_perceptron_tagger_eng', download_dir=download_dir)
+    print('NLTK resource downloaded to', download_dir)
+except Exception as e:
+    print('NLTK download failed:', e)
+    sys.exit(1)
+PY
+print_status $? "NLTK 资源安装"
+
+# 如果仓库中包含 sherpa 模型压缩包，尝试解压到正确位置
+MODEL_TAR=$(find "$SCRIPT_DIR" -maxdepth 2 -name "sherpa-onnx-streaming-paraformer-bilingual-zh-en*.tar.*" 2>/dev/null | head -n 1)
+MODEL_DIR="$SCRIPT_DIR/src/voice_interaction/models/sherpa-onnx-streaming-paraformer-bilingual-zh-en"
+if [ -n "$MODEL_TAR" ] && [ ! -d "$MODEL_DIR" ]; then
+    echo "找到模型压缩包: $MODEL_TAR，正在解压到 $MODEL_DIR"
+    mkdir -p "$(dirname "$MODEL_DIR")"
+    tar -xjf "$MODEL_TAR" -C "$(dirname "$MODEL_DIR")"
+    print_status $? "解压 sherpa 模型包"
+else
+    if [ -d "$MODEL_DIR" ]; then
+        print_status 0 "sherpa 模型目录已存在"
+    else
+        echo -e "${YELLOW}[!]${NC} 未找到模型压缩包或模型目录，STT 可能不可用（请手动提供模型）"
+    fi
+fi
+
+# ========================================
 # 7. 输出汇总
 # ========================================
 echo ""
