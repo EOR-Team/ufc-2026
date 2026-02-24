@@ -15,16 +15,15 @@ _CC_MAX_RETRY = 3
 async def collect_conditions(
     user_input: str,
     online_model: bool
-) -> str | None:
+) -> ConditionCollectorOutput | None:
     """
-    从用户的输入中 提取出与身体状况相关的信息
-    并根据现有地图结构 给出分诊的诊室建议
+    从用户的输入中提取结构化症状信息
 
     Args:
         user_input (str): 用户的原始输入
         online_model (bool): 是否使用在线的模型进行推理
     Returns:
-        str: 建议的分诊诊室的ID
+        ConditionCollectorOutput: 结构化症状信息
         None: 超过 `_CC_MAX_RETRY` 的尝试次数后也无法解析 返回空
     """
 
@@ -41,11 +40,56 @@ async def collect_conditions(
         
         if rsp:
             # 能够**正常**获取返回值 直接退出返回
-            return rsp.clinic_selection
+            return rsp
         
         # 返回为空 重新解析
         _retry_time += 1
         logger.warning(f"Collect conditions failed. Already retry {_retry_time} times. Retrying...")
+    
+    # 最终还是没有解析成功 返回空
+    return None
+
+
+async def select_clinic(
+    conditions: ConditionCollectorOutput,
+    online_model: bool
+) -> str | None:
+    """
+    根据结构化症状信息选择诊室
+
+    Args:
+        conditions (ConditionCollectorOutput): 结构化症状信息
+        online_model (bool): 是否使用在线的模型进行推理
+    Returns:
+        str: 选择的诊室ID
+        None: 超过 `_SC_MAX_RETRY` 的尝试次数后也无法解析 返回空
+    """
+
+    _retry_time = 0
+    _SC_MAX_RETRY = 3
+
+    while _retry_time < _SC_MAX_RETRY:
+
+        if online_model:
+            # 使用在线模型推理
+            rsp = await select_clinic_online(conditions)
+        else:
+            # 使用离线模型推理
+            rsp = await select_clinic_offline(
+                body_parts=conditions.body_parts,
+                duration=conditions.duration,
+                severity=conditions.severity,
+                description=conditions.description,
+                other_relevant_information=conditions.other_relevant_information
+            )
+        
+        if rsp:
+            # 能够**正常**获取返回值 直接退出返回
+            return rsp.clinic_selection
+        
+        # 返回为空 重新解析
+        _retry_time += 1
+        logger.warning(f"Select clinic failed. Already retry {_retry_time} times. Retrying...")
     
     # 最终还是没有解析成功 返回空
     return None
@@ -161,21 +205,30 @@ async def modify_route(
     # 离线模型 CC 和 RC 共享同一个 chat model 实例（非线程安全），必须串行执行
 
     if online_model:
+        # 并发执行条件收集和需求收集
         cc_output, cr_output = await asyncio.gather(
-            collect_conditions_online(user_input),
+            collect_conditions(user_input, online_model),
             collect_requirement_online(user_input)
         )
     else:
-        cc_output = await collect_conditions_offline(user_input)
+        # 串行执行条件收集和需求收集
+        cc_output = await collect_conditions(user_input, online_model)
         cr_output = await collect_requirement_offline(user_input)
     
     # 获取到数据之后 修改路线
     if not cc_output or not cr_output:
         # 上述任一解析失败 直接返回空 无法修改路线
+        logger.error("Failed to collect conditions or requirements")
+        return None
+
+    # 根据收集的条件选择诊室
+    clinic_id = await select_clinic(cc_output, online_model)
+    if not clinic_id:
+        logger.error("Failed to select clinic")
         return None
 
     return await patch_route(
-        cc_output.clinic_selection,
+        clinic_id,
         cr_output.requirements,
         origin_route,
         online_model
@@ -184,4 +237,6 @@ async def modify_route(
     
 __all__ = [
     "modify_route",
+    "collect_conditions",
+    "select_clinic",
 ]

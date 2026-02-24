@@ -120,7 +120,7 @@ async def collect_requirement_online(input: str) -> RequirementCollectorOutput |
     response = await Runner().run(
         starting_agent = agent,
         input = "Input: {}".format(input),
-        max_turns = 2 # idk whether the agent will ask multiple rounds of questions
+        max_turns = 1 # idk whether the agent will ask multiple rounds of questions
     )
 
     response_text = response.final_output

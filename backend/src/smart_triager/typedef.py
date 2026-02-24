@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 class ConditionCollectorOutput(BaseModel):
     """
-    对当前患者明确症状的总结
+    对当前患者明确症状的总结（不含诊室选择）
     """
 
     body_parts: str = Field(..., description="感到不适的身体部位")
@@ -20,8 +20,6 @@ class ConditionCollectorOutput(BaseModel):
     description: str = Field(..., description="症状的具体描述")
 
     other_relevant_information: list[str] = Field(default_factory=list, description="其他与诊断患者病情和进行分诊相关的信息")
-
-    clinic_selection: str = Field(..., description="诊室ID: 内科、外科、儿科")
 
 
 class Requirement(BaseModel):
@@ -91,3 +89,11 @@ def generate_route_by_ids(*ids: str) -> list[LocationLink]:
     return [
         LocationLink(this=ids[i], next=ids[i + 1]) for i in range(len(ids) - 1)
     ]
+
+
+class ClinicSelectionOutput(BaseModel):
+    """
+    诊室选择结果
+    """
+
+    clinic_selection: str = Field(..., description="诊室ID")
