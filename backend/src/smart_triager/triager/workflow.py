@@ -187,56 +187,49 @@ async def modify_route(
     online_model: bool
 ) -> RoutePatcherOutput | None:
     """
-    从用户的输入中提取出他的个性化需求
-    并根据现有地图结构 给出分诊的诊室建议
-    最后根据目的地诊室ID和需求摘要 对原路线进行修改
-    以满足用户的个性化需求
+    完整的工作流：收集症状、选择诊室、收集需求、修改路线
 
     Args:
-        user_input (str): 用户的原始输入
-        origin_route (list[LocationLink]): 原路线列表
-        online_model (bool): 是否使用在线模型进行推理
+        user_input: 用户输入的病症描述
+        origin_route: 原路线列表
+        online_model: 是否使用在线模型
+
     Returns:
-        RoutePatcherOutput: 路线修改方案输出对象
-        None: 解析失败 返回空
+        RoutePatcherOutput: 路线修改方案
+        None: 任何一步失败时返回None
     """
 
-    # 在线模型各自使用独立的 HTTP 连接，可以安全地并发执行
-    # 离线模型 CC 和 RC 共享同一个 chat model 实例（非线程安全），必须串行执行
-
-    if online_model:
-        # 并发执行条件收集和需求收集
-        cc_output, cr_output = await asyncio.gather(
-            collect_conditions(user_input, online_model),
-            collect_requirement_online(user_input)
-        )
-    else:
-        # 串行执行条件收集和需求收集
-        cc_output = await collect_conditions(user_input, online_model)
-        cr_output = await collect_requirement_offline(user_input)
-    
-    # 获取到数据之后 修改路线
-    if not cc_output or not cr_output:
-        # 上述任一解析失败 直接返回空 无法修改路线
-        logger.error("Failed to collect conditions or requirements")
+    # 1. 收集症状信息
+    conditions = await collect_conditions(user_input, online_model)
+    if not conditions:
+        logger.warning("Failed to collect conditions in modify_route")
         return None
 
-    # 根据收集的条件选择诊室
-    clinic_id = await select_clinic(cc_output, online_model)
+    # 2. 选择诊室
+    clinic_id = await select_clinic(conditions, online_model)
     if not clinic_id:
-        logger.error("Failed to select clinic")
+        logger.warning("Failed to select clinic in modify_route")
         return None
 
-    return await patch_route(
-        clinic_id,
-        cr_output.requirements,
-        origin_route,
-        online_model
-    )
+    # 3. 收集需求
+    requirements = await collect_requirement(user_input, online_model)
+    if not requirements:
+        logger.warning("Failed to collect requirements in modify_route")
+        return None
 
-    
+    # 4. 修改路线
+    patched_route = await patch_route(clinic_id, requirements, origin_route, online_model)
+    if not patched_route:
+        logger.warning("Failed to patch route in modify_route")
+        return None
+
+    return patched_route
+
+
 __all__ = [
-    "modify_route",
     "collect_conditions",
+    "collect_requirement",
     "select_clinic",
+    "patch_route",
+    "modify_route"
 ]

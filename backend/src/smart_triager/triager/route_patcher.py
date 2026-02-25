@@ -24,8 +24,6 @@ def generate_route(specific_clinic_id: str) -> list[LocationLink]:
         list[LocationLink]: 生成的新路线
     """
 
-    result = []
-
     route_ids = [
         "entrance",
         "registration_center",
