@@ -19,6 +19,7 @@ pydantic
 # TTS and STT
 sherpa-onnx
 soundfile
+python-multipart
 ./melotts-0.1.2-py3-none-any.whl
 
 # Face recognition

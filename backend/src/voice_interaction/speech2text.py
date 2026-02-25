@@ -8,7 +8,7 @@ class SpeechRecognizer:
     def __init__(
         self,
         model_dir=None,
-        audio_path="../assets/input/sound.wav",
+        audio_path="./assets/input.wav",
         sample_rate=16000,
     ):
         # 如果未显式提供 model_dir，使用相对于本模块的 models 目录（包内路径）
@@ -26,7 +26,7 @@ class SpeechRecognizer:
             tokens=os.path.join(self.model_dir, "tokens.txt"),
             encoder=os.path.join(self.model_dir, "encoder.onnx"),
             decoder=os.path.join(self.model_dir, "decoder.onnx"),
-            num_threads=4,
+            num_threads=1,
             sample_rate=16000,
             feature_dim=80,
         )

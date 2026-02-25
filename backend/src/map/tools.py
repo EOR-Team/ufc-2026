@@ -133,11 +133,21 @@ def dijkstra_search(
         list[str] | None: 最短路径上的节点ID列表，如果没有路径则返回None
     """
 
-    # 构建邻接表
+    # 构建节点坐标字典
+    node_coords = {node.id: (node.x, node.y) for node in map.nodes}
+
+    # 构建邻接表，动态计算曼哈顿距离
     adjacency_list = {}
     for edge in map.edges:
-        adjacency_list.setdefault(edge.u_node, []).append((edge.v_node, edge.cost))
-        adjacency_list.setdefault(edge.v_node, []).append((edge.u_node, edge.cost))
+        # 获取节点坐标
+        x1, y1 = node_coords.get(edge.u_node, (0, 0))
+        x2, y2 = node_coords.get(edge.v_node, (0, 0))
+
+        # 计算曼哈顿距离
+        cost = int(abs(x2 - x1) + abs(y2 - y1))
+
+        adjacency_list.setdefault(edge.u_node, []).append((edge.v_node, cost))
+        adjacency_list.setdefault(edge.v_node, []).append((edge.u_node, cost))
 
     # 初始化Dijkstra算法的数据结构
     min_heap = [(0, start_node_id)]  # (累计费用, 节点ID)
@@ -244,6 +254,8 @@ def validate_path(map: Map, path: list[str]) -> bool:
 with open(MAP_PATH, "r", encoding="utf-8") as f:
     map_json_str = f.read()
     map = load_map_from_str(map_json_str)
+    if map:
+        compute_costs(map)
 
 main_node_ids = get_all_main_node_ids(map) if map else None
 main_node_id_to_name_and_description = get_all_main_node_id_to_name_and_description(map) if map else None

@@ -15,6 +15,8 @@ from src.smart_triager.triager.workflow import (
     patch_route as patch_route_workflow,
     modify_route as modify_route_workflow,
 )
+from src.map.tools import map
+from src.smart_triager.car.parser import parse_route_to_commands
 
 
 triager_router = APIRouter(prefix="/triager")
@@ -68,6 +70,14 @@ class PatchRouteRequest(BaseModel):
     requirement_summary: list[Requirement] = Field(..., description="用户需求摘要列表")
     origin_route: list[LocationLink] = Field(..., description="原路线列表")
     online_model: bool = Field(default=True, description="是否使用在线模型进行路线修改")
+
+
+class ParseCommandsRequest(BaseModel):
+    """
+    解析路线为小车移动指令的请求体
+    """
+    origin_route: list[LocationLink] = Field(..., description="原始路线列表")
+    # 注意：与现有API保持一致，可能添加online_model参数，但当前不需要
 
 
 @triager_router.post("/get_route_patch/")
@@ -207,6 +217,40 @@ async def patch_route(
     else:
         return JSONResponse(
             content={ "success": False, "error": "Failed to patch route." },
+            status_code=500,
+            media_type="application/json"
+        )
+
+
+@triager_router.post("/parse_commands/")
+async def parse_commands(
+    request: ParseCommandsRequest
+):
+    """
+    将路线转换为小车移动指令
+    """
+    origin_route = request.origin_route
+
+    try:
+        # 调用路径解析器
+        commands = parse_route_to_commands(origin_route, map)
+
+        return JSONResponse(
+            content={"success": True, "data": commands.model_dump()},
+            status_code=200,
+            media_type="application/json"
+        )
+    except ValueError as e:
+        # 路径不存在或输入无效
+        return JSONResponse(
+            content={"success": False, "error": str(e)},
+            status_code=500,
+            media_type="application/json"
+        )
+    except Exception as e:
+        # 其他未知错误
+        return JSONResponse(
+            content={"success": False, "error": f"Internal error: {str(e)}"},
             status_code=500,
             media_type="application/json"
         )
