@@ -1,7 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useChatModeStore } from '@/stores/useChatModeStore'
 import FixedAspectContainer from '@/components/FixedAspectContainer.vue'
 import AppTopBar from '@/components/AppTopBar.vue'
 import ConversationList from '@/components/ConversationList.vue'
@@ -11,11 +10,6 @@ import { useLongPress } from '@/composables/useLongPress'
 import { useViewportOverflow } from '@/composables/useViewportOverflow'
 
 const router = useRouter()
-const chatMode = useChatModeStore()
-const slideTransition = computed(() => `slide-${chatMode.direction}`)
-
-// 进入页面时重置为默认模式（智能寻路）
-onMounted(() => chatMode.reset())
 
 // 语音长按状态
 const { isActive: isListening, start, end } = useLongPress(250)
@@ -23,9 +17,9 @@ const { isActive: isListening, start, end } = useLongPress(250)
 // 内容溢出检测（自动挂载监听）
 useViewportOverflow()
 
-// 消息列表（mock 数据，待后端对接）
-const messages = ref([
-  { name: 'assistant', message: '你好！今天有什么我可以帮你的吗？' },
+// 消息列表（独立的消息历史）
+const navigationMessages = ref([
+  { name: 'assistant', message: '你好！我是智能寻路助手，可以帮你导航到医院各个科室。' },
   { name: 'user',      message: '我想去门诊部' },
   { name: 'assistant', message: '好的，我可以帮你导航到门诊部。请问你现在在哪里？' },
   { name: 'user',      message: '我在医院大厅' },
@@ -46,27 +40,12 @@ const messages = ref([
 
     <!-- 主内容区（相对定位，供 VoiceOverlay 绝对定位参考） -->
     <div class="flex-1 flex flex-col relative min-h-0">
-      <!-- 动画容器：动态控制溢出，动画期间隐藏溢出，非动画期间允许溢出 -->
-      <div 
-        class="relative flex-1 min-h-0"
-        :class="{ 'overflow-hidden': chatMode.isAnimating }"
-      >
-        <!-- Vue Transition：负责动画控制 -->
-        <transition 
-          :name="slideTransition"
-          @before-enter="chatMode.startAnimation()"
-          @after-enter="chatMode.endAnimation()"
-          @before-leave="chatMode.startAnimation()"
-          @after-leave="chatMode.endAnimation()"
-        >
-          <!-- 定位容器：确保填满空间（CSS中已设置position: absolute） -->
-          <div :key="chatMode.mode">
-            <!-- 滚动容器：独立处理滚动，使用固定高度而非100% -->
-            <div class="overflow-y-auto no-scrollbar" style="height: 471px;">
-              <ConversationList :messages="messages" />
-            </div>
-          </div>
-        </transition>
+      <!-- 滚动容器：独立处理滚动 -->
+      <div class="relative flex-1 min-h-0">
+        <!-- 内容容器 -->
+        <div class="overflow-y-auto no-scrollbar" style="height: 471px;">
+          <ConversationList :messages="navigationMessages" />
+        </div>
       </div>
       <VoiceOverlay :visible="isListening" />
     </div>

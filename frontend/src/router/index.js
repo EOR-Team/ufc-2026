@@ -10,9 +10,18 @@ const router = createRouter({
       component: HomeView,
     },
     {
+      path: '/nav_page',
+      name: 'navigation',
+      component: () => import('../views/NavigationView.vue'),
+    },
+    {
+      path: '/doctor_page',
+      name: 'medical',
+      component: () => import('../views/MedicalView.vue'),
+    },
+    {
       path: '/chat',
-      name: 'chat',
-      component: () => import('../views/ChatView.vue'),
+      redirect: '/nav_page',
     },
     {
       path: '/settings',
@@ -20,6 +29,13 @@ const router = createRouter({
       component: () => import('../views/SettingsView.vue'),
     },
   ],
+})
+
+// 全局前置守卫：设置页面切换动画为淡入淡出
+router.beforeEach((to, from) => {
+  // 所有页面切换都使用淡入淡出动画
+  to.meta.transition = 'fade'
+  return true
 })
 
 export default router
