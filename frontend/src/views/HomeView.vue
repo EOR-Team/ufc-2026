@@ -112,8 +112,8 @@ const handleFaceLogin = async () => {
     // 模拟人脸识别过程
     await new Promise(resolve => setTimeout(resolve, 2000))
     
-    // 登录成功后跳转到聊天页面
-    router.push({ name: 'chat' })
+    // 登录成功后跳转到智能寻路页面
+    router.push({ name: 'navigation' })
   } catch (error) {
     console.error('登录失败:', error)
     // 这里可以添加错误处理逻辑

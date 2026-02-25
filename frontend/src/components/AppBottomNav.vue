@@ -9,9 +9,10 @@
  *   press-start — 用户开始按下 FAB 时触发
  *   press-end   — 用户松开或移出 FAB 时触发
  */
-import { useChatModeStore } from '@/stores/useChatModeStore'
+import { useRouter, useRoute } from 'vue-router'
 
-const chatMode = useChatModeStore()
+const router = useRouter()
+const route = useRoute()
 
 const props = defineProps({
   isListening: {
@@ -34,17 +35,17 @@ const preventClick = (e) => e.preventDefault()
 
     <!-- 智能寻路 -->
     <div
-      class="flex flex-col items-center gap-1 flex-1 cursor-pointer transition-opacity"
-      :class="chatMode.mode === 'navigation' ? 'opacity-100' : 'opacity-50 hover:opacity-75'"
-      @click="chatMode.setMode('navigation')"
+      class="flex flex-col items-center gap-1 flex-1 cursor-pointer"
+      :class="route.path === '/nav_page' ? 'opacity-100' : 'opacity-50 hover:opacity-75'"
+      @click="router.push('/nav_page')"
     >
       <span
-        class="material-symbols-outlined transition-colors"
-        :class="chatMode.mode === 'navigation' ? 'text-primary' : 'text-slate-500'"
+        class="material-symbols-outlined"
+        :class="route.path === '/nav_page' ? 'text-primary' : 'text-slate-500'"
       >map</span>
       <span
-        class="text-[10px] font-medium transition-colors"
-        :class="chatMode.mode === 'navigation' ? 'text-primary' : 'text-slate-500'"
+        class="text-[10px] font-medium"
+        :class="route.path === '/nav_page' ? 'text-primary' : 'text-slate-500'"
       >智能寻路</span>
     </div>
 
@@ -52,7 +53,7 @@ const preventClick = (e) => e.preventDefault()
     <div class="relative flex-1 flex justify-center">
       <div class="absolute -top-16">
         <button
-          class="relative flex flex-col items-center justify-center w-20 h-20 rounded-full text-white shadow-[0_8px_20px_rgba(0,0,0,0.35)] active:scale-95 transition-all z-10 border-4 border-white bg-primary hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
+          class="relative flex flex-col items-center justify-center w-20 h-20 rounded-full text-white shadow-[0_8px_20px_rgba(0,0,0,0.35)] active:scale-95 z-10 border-4 border-white bg-primary hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
           style="border-radius: 9999px;"
           @mousedown="onPressStart"
           @touchstart="onPressStart"
@@ -65,7 +66,7 @@ const preventClick = (e) => e.preventDefault()
           }"
         >
           <span
-            class="material-symbols-outlined text-3xl transition-all mb-1"
+            class="material-symbols-outlined text-3xl mb-1"
             :style="{
               'font-variation-settings': isListening ? '\'FILL\' 1, \'wght\' 700' : '\'FILL\' 1'
             }"
@@ -81,17 +82,17 @@ const preventClick = (e) => e.preventDefault()
 
     <!-- 智能医患 -->
     <div
-      class="flex flex-col items-center gap-1 flex-1 cursor-pointer transition-opacity"
-      :class="chatMode.mode === 'medical' ? 'opacity-100' : 'opacity-50 hover:opacity-75'"
-      @click="chatMode.setMode('medical')"
+      class="flex flex-col items-center gap-1 flex-1 cursor-pointer"
+      :class="route.path === '/doctor_page' ? 'opacity-100' : 'opacity-50 hover:opacity-75'"
+      @click="router.push('/doctor_page')"
     >
       <span
-        class="material-symbols-outlined transition-colors"
-        :class="chatMode.mode === 'medical' ? 'text-primary' : 'text-slate-500'"
+        class="material-symbols-outlined"
+        :class="route.path === '/doctor_page' ? 'text-primary' : 'text-slate-500'"
       >medical_services</span>
       <span
-        class="text-[10px] font-medium transition-colors"
-        :class="chatMode.mode === 'medical' ? 'text-primary' : 'text-slate-500'"
+        class="text-[10px] font-medium"
+        :class="route.path === '/doctor_page' ? 'text-primary' : 'text-slate-500'"
       >智能医患</span>
     </div>
 
