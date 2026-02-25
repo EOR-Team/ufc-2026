@@ -1,0 +1,13 @@
+# Ignore model files and sound files
+sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20
+sherpa-onnx-streaming-paraformer-bilingual-zh-en
+vits-zh-hf-fanchen-wnj
+vits-melo-tts-zh_en
+
+# sound
+*.wav
+output
+
+#backup files
+*.bak
+backup

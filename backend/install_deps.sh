@@ -81,6 +81,10 @@ fi
 PYTHON_CMD="$VENV_DIR/bin/python"
 echo -e "${GREEN}[✓]${NC} 使用 Python: $PYTHON_CMD"
 
+# 设置 HF_ENDPOINT 环境变量以使用国内镜像（根据指南建议）
+export HF_ENDPOINT="https://hf-mirror.com"
+echo -e "${GREEN}[✓]${NC} 设置 HF_ENDPOINT=$HF_ENDPOINT (使用国内镜像)"
+
 # 升级 pip
 "$PYTHON_CMD" -m pip install --upgrade pip --quiet
 echo -e "${GREEN}[✓]${NC} pip 已升级"
@@ -111,25 +115,46 @@ print_status $? "常规依赖安装完成"
 rm -f "$TMP_REQ"
 
 # ========================================
-# 4. 安装 MeloTTS（whl 包）
+# 4. 安装 MeloTTS（whl 包或从 git 安装）
 # ========================================
 print_section "安装 MeloTTS..."
 
 WHL_FILE=$(find "$SCRIPT_DIR" -maxdepth 1 -name "melotts*.whl" -o -name "melo*.whl" 2>/dev/null | head -n 1)
 
-if [ -z "$WHL_FILE" ]; then
-    echo -e "${RED}[✗] 未找到 melotts*.whl 文件，请确保 whl 文件在 backend/ 目录下${NC}"
-    FAILED=$((FAILED + 1))
-else
+if [ -n "$WHL_FILE" ]; then
+    # 有本地 whl 文件，优先使用
     echo -e "${GREEN}[✓]${NC} 找到安装包: $WHL_FILE"
     "$PYTHON_CMD" -m pip install "$WHL_FILE"
-    print_status $? "MeloTTS 安装完成"
+    print_status $? "MeloTTS 安装完成（使用本地 whl 文件）"
 
     # MeloTTS 的依赖链会把 numpy 降级到 1.26.x，而 opencv 需要 numpy>=2
     # 安装完成后强制升回兼容版本
     echo -e "${YELLOW}[!]${NC} 修复 numpy 版本冲突（MeloTTS 会降级 numpy，opencv 需要 >=2）..."
     "$PYTHON_CMD" -m pip install "numpy>=2" --quiet
     print_status $? "numpy 版本修复完成（>=2，满足 opencv 要求）"
+else
+    # 没有本地 whl 文件，尝试从 git 安装（根据指南）
+    echo -e "${YELLOW}[!]${NC} 未找到本地 MeloTTS whl 文件，尝试从 GitHub 安装..."
+    echo -e "${YELLOW}[!]${NC} 注意：从 git 安装可能需要较长时间，且依赖网络连接"
+
+    # 设置 HF_ENDPOINT 环境变量以使用镜像（根据指南建议）
+    export HF_ENDPOINT="https://hf-mirror.com"
+
+    "$PYTHON_CMD" -m pip install "git+https://github.com/myshell-ai/MeloTTS.git"
+    if [ $? -eq 0 ]; then
+        print_status 0 "MeloTTS 安装完成（从 GitHub 安装）"
+
+        # 同样需要修复 numpy 版本冲突
+        echo -e "${YELLOW}[!]${NC} 修复 numpy 版本冲突（MeloTTS 会降级 numpy，opencv 需要 >=2）..."
+        "$PYTHON_CMD" -m pip install "numpy>=2" --quiet
+        print_status $? "numpy 版本修复完成（>=2，满足 opencv 要求）"
+    else
+        echo -e "${RED}[✗]${NC} MeloTTS 安装失败，TTS 功能可能不可用"
+        echo -e "    请手动安装 MeloTTS："
+        echo -e "    1. 下载 melotts*.whl 文件到 backend/ 目录"
+        echo -e "    2. 或运行: pip install git+https://github.com/myshell-ai/MeloTTS.git"
+        FAILED=$((FAILED + 1))
+    fi
 fi
 
 # ========================================
@@ -370,6 +395,102 @@ if [[ "$MELO_TEST" == *"OK"* ]]; then
 else
     print_status 1 "MeloTTS 语音合成测试失败"
     echo "$MELO_TEST"
+fi
+
+# ========================================
+# 6.1 额外资源：NLTK 资源 & 模型文件
+# ========================================
+print_section "检查并安装 NLTK 资源与模型文件"
+
+# 指定虚拟环境下的 nltk_data 存放位置，避免与系统冲突
+VENV_NLTK_DIR="$VENV_DIR/nltk_data"
+mkdir -p "$VENV_NLTK_DIR"
+
+echo "将下载 NLTK 资源：averaged_perceptron_tagger_eng 到 $VENV_NLTK_DIR"
+"$PYTHON_CMD" - <<PY
+import nltk, os, sys
+download_dir = os.path.abspath(os.path.join(os.path.dirname(sys.executable), '..', 'nltk_data'))
+try:
+    nltk.download('averaged_perceptron_tagger_eng', download_dir=download_dir)
+    print('NLTK resource downloaded to', download_dir)
+except Exception as e:
+    print('NLTK download failed:', e)
+    sys.exit(1)
+PY
+print_status $? "NLTK 资源安装"
+
+# 如果仓库中包含 sherpa 模型压缩包，尝试解压到正确位置
+MODEL_TAR=$(find "$SCRIPT_DIR" -maxdepth 2 -name "sherpa-onnx-streaming-paraformer-bilingual-zh-en*.tar.*" 2>/dev/null | head -n 1)
+MODEL_DIR="$SCRIPT_DIR/src/voice_interaction/models/sherpa-onnx-streaming-paraformer-bilingual-zh-en"
+
+if [ -n "$MODEL_TAR" ] && [ ! -d "$MODEL_DIR" ]; then
+    echo "找到模型压缩包: $MODEL_TAR，正在解压到 $MODEL_DIR"
+    mkdir -p "$(dirname "$MODEL_DIR")"
+    tar -xjf "$MODEL_TAR" -C "$(dirname "$MODEL_DIR")"
+    print_status $? "解压 sherpa 模型包"
+elif [ -d "$MODEL_DIR" ]; then
+    print_status 0 "sherpa 模型目录已存在"
+else
+    # 如果本地没有模型，尝试从网络下载（根据指南中的链接）
+    echo -e "${YELLOW}[!]${NC} 未找到本地模型，尝试从网络下载 paraformer 中英双语模型..."
+    MODEL_URL="https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-paraformer-bilingual-zh-en.tar.bz2"
+    MODEL_TAR_DL="$SCRIPT_DIR/sherpa-onnx-streaming-paraformer-bilingual-zh-en.tar.bz2"
+
+    if command -v wget &> /dev/null; then
+        wget -q "$MODEL_URL" -O "$MODEL_TAR_DL"
+        if [ $? -eq 0 ] && [ -f "$MODEL_TAR_DL" ]; then
+            echo -e "${GREEN}[✓]${NC} 模型下载成功: $MODEL_TAR_DL"
+            mkdir -p "$(dirname "$MODEL_DIR")"
+            tar -xjf "$MODEL_TAR_DL" -C "$(dirname "$MODEL_DIR")"
+            print_status $? "解压下载的 sherpa 模型包"
+            rm -f "$MODEL_TAR_DL"
+        else
+            echo -e "${RED}[✗]${NC} 模型下载失败，STT 可能不可用"
+            echo -e "    请手动下载模型并放置在 backend/ 目录下:"
+            echo -e "    wget $MODEL_URL"
+        fi
+    else
+        echo -e "${RED}[✗]${NC} 未找到 wget 命令，无法下载模型"
+        echo -e "    请手动下载模型并放置在 backend/ 目录下:"
+        echo -e "    wget $MODEL_URL"
+    fi
+fi
+
+# 验证模型文件结构（根据指南中的模型结构说明）
+if [ -d "$MODEL_DIR" ]; then
+    echo ""
+    echo "验证 sherpa-onnx 模型文件结构..."
+
+    REQUIRED_FILES=("encoder.onnx" "decoder.onnx" "tokens.txt")
+    MISSING_FILES=()
+
+    for file in "${REQUIRED_FILES[@]}"; do
+        if [ ! -f "$MODEL_DIR/$file" ]; then
+            MISSING_FILES+=("$file")
+        fi
+    done
+
+    if [ ${#MISSING_FILES[@]} -eq 0 ]; then
+        echo -e "${GREEN}[✓]${NC} 模型文件结构完整"
+        echo -e "    ${GREEN}→${NC} 找到: encoder.onnx, decoder.onnx, tokens.txt"
+
+        # 检查可选文件
+        OPTIONAL_FILES=("encoder.int8.onnx" "decoder.int8.onnx" "test_wavs/")
+        for file in "${OPTIONAL_FILES[@]}"; do
+            if [ -e "$MODEL_DIR/$file" ]; then
+                echo -e "    ${GREEN}→${NC} 找到可选文件: $file"
+            fi
+        done
+    else
+        echo -e "${YELLOW}[!]${NC} 模型文件不完整，缺少: ${MISSING_FILES[*]}"
+        echo -e "    请确保模型目录包含以下必需文件:"
+        echo -e "    - encoder.onnx"
+        echo -e "    - decoder.onnx"
+        echo -e "    - tokens.txt"
+        echo -e "    模型目录: $MODEL_DIR"
+    fi
+else
+    echo -e "${YELLOW}[!]${NC} 模型目录不存在，跳过模型验证"
 fi
 
 # ========================================

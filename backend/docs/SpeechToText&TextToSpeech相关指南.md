@@ -83,7 +83,7 @@ recognizer = sherpa_onnx.OnlineRecognizer.from_paraformer(
             tokens=os.path.join(model_dir, "tokens.txt"),
             encoder=os.path.join(model_dir, "encoder.onnx"),
             decoder=os.path.join(model_dir, "decoder.onnx"),
-            num_threads=4,
+            num_threads=1,
             sample_rate=16000,
             feature_dim=80,
         )
@@ -160,7 +160,7 @@ tts = TTS(language = "ZH",device = "cpu")
 合成音频并输出：
 
 ```python
-self.tts.tts_to_file(sentence,speaker_id=0,output_path=temp_path)
+tts.tts_to_file(sentence,speaker_id=0,output_path=temp_path)
 audio , sr = sf.read(temp_path)
 sf.write(file_name, audio, sample_rate)
 ```
