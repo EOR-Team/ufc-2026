@@ -10,6 +10,7 @@ from src import logger
 from src.router import api_router
 from src.llm import offline
 from src.utils import remove_os_environ_proxies
+from src.voice_interaction.voice_interaction import VoiceInteraction
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,12 +20,18 @@ async def lifespan(app: FastAPI):
 
     # Startup
     logger.info("Starting backend server...")
+
+    # === 1. 网络设置 ===
     remove_os_environ_proxies() # 移除环境变量中的代理设置，防止影响本地服务调用
 
+    # === 2. 语言模型预热 ===
     logger.info("Starting offline chat models models...")
     offline.get_offline_chat_model() # 预加载离线聊天模型
     # offline.get_offline_reasoning_model() # 预加载离线推理模型
-    logger.info("Offline models initialized.")  
+    logger.info("Offline chat models initialized.")  
+
+    # === 3. 语音交互预热 ===
+    await VoiceInteraction().warmup()
 
     yield 
 

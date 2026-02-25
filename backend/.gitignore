@@ -1,6 +1,12 @@
-venv310/
-_venv/
+# Claude Code
+SCRATCH.md
+TODO.md
 
+melo_test.wav
+
+# Binary model files
+sherpa-onnx-streaming-paraformer-bilingual-zh-en.tar.bz2
+model/
 
 # LLM model files
 *.gguf

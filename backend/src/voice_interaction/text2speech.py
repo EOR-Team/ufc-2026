@@ -8,7 +8,7 @@ os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 
 class TextToSpeech:
-    def __init__(self, path="../assets/output"):
+    def __init__(self, path="./assets"):
         self._model = TTS(language="ZH", device="cpu")
         self.output_path = path
         self.sample_rate = self._model.hps.data.sampling_rate

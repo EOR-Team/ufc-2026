@@ -21,7 +21,7 @@
             "type": "nav"
         },
         {
-            "id": "emergency_room",
+            "id": "emergency_clinic",
             "x": 2,
             "y": 1,
             "type": "main",
@@ -136,7 +136,7 @@
         },
         {
             "u": "crossroad2",
-            "v": "emergency_room",
+            "v": "emergency_clinic",
             "name": "急诊通道"
         },
         {

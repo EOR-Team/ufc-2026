@@ -83,7 +83,7 @@ recognizer = sherpa_onnx.OnlineRecognizer.from_paraformer(
             tokens=os.path.join(model_dir, "tokens.txt"),
             encoder=os.path.join(model_dir, "encoder.onnx"),
             decoder=os.path.join(model_dir, "decoder.onnx"),
-            num_threads=4,
+            num_threads=1,
             sample_rate=16000,
             feature_dim=80,
         )

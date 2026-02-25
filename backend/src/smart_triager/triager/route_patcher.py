@@ -24,8 +24,6 @@ def generate_route(specific_clinic_id: str) -> list[LocationLink]:
         list[LocationLink]: 生成的新路线
     """
 
-    result = []
-
     route_ids = [
         "entrance",
         "registration_center",
@@ -271,7 +269,8 @@ async def patch_route_online(
 
     response = await Runner().run(
         starting_agent = agent,
-        input = "Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) )
+        input = "Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) ),
+        max_turns = 1 # idk whether the agent will ask multiple rounds of questions
     )
 
     response_text = response.final_output
