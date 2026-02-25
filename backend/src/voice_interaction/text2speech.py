@@ -1,10 +1,10 @@
 import os
 import asyncio
-from melo.api import TTS
 import soundfile as sf
 import re
 
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+from melo.api import TTS
 
 
 class TextToSpeech:
