@@ -28,6 +28,8 @@ uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 bash start_offline_chat_server.sh
 ```
 
+**Note**: `start_offline_chat_server.sh` launches a separate llama.cpp server on a different port (default 8001) for offline LLM inference. The main FastAPI server communicates with it via HTTP.
+
 ### Frontend Development
 ```bash
 cd frontend
@@ -41,6 +43,19 @@ npm run preview  # Preview production build
 1. Copy `.env.example` to `.env` in the backend root
 2. Set `DEEPSEEK_API_KEY` for online LLM API access
 3. Other environment variables are loaded via `python-dotenv`
+
+### Model Management
+- **Offline LLM models**: Place GGUF model files in `backend/model/`. Configure paths in `backend/src/config/general.py`.
+  - Chat model: `qwen2.5-coder-1.5b-instruct-q4_k_m.gguf`
+  - Reasoning model: `Qwen3-4B-Thinking-2507-Q4_K_M.gguf`
+- **Voice interaction models**: Sherpa-onnx models go in `backend/src/voice_interaction/models/`. The `install_deps.sh` script can extract from tar archives.
+- **Face recognition assets**: `backend/assets/face/face.png` is used for face recognition.
+- **Map data**: `backend/assets/small1.map.json` contains navigation graph data.
+
+### Deployment
+- **Nginx configuration**: See `nginx.gcp.conf` for GCP deployment. Static files are served from `frontend/dist/` after building.
+- **Frontend static files**: Static HTML files (if present in `frontend/_page_*/`) use the planned container size (332×774.66px) for reference.
+- **Backend service**: Runs on port 8000 (FastAPI). Offline LLM server runs on port 8001 (llama.cpp).
 
 ## Architecture Overview
 
@@ -130,9 +145,11 @@ ufc-2026/
 - **Solved Issues**: Check `frontend/docs/solved_issues.md` for known problems and solutions (e.g., CSS animation vs. scrolling conflicts).
 
 ### Git Workflow
-- Current branch: `feature-guide-improve`
-- Main branch: `main`
-- Recent changes: Smart triager refactoring, face recognition updates, voice interaction async conversion
+- **Main branch**: `main` is the default branch for production-ready code.
+- **Feature branches**: Use `feature-*` naming convention (e.g., `feature-guide-improve`).
+- **Pull requests**: Create PRs against `main`. Include a summary of changes, test plan, and any breaking changes.
+- **Commit messages**: Follow conventional commits; describe "why" rather than "what".
+- **Recent changes**: Smart triager refactoring, face recognition updates, voice interaction async conversion.
 
 ## Important Constraints
 
@@ -141,6 +158,14 @@ ufc-2026/
 3. **Configuration References**: Always import paths/constants from `config/general.py`; never hardcode.
 4. **Pydantic Validation**: Always validate LLM JSON output through Pydantic models.
 5. **Voice Interaction**: Long-press threshold is 250ms; visual feedback must be provided during recording.
+
+## Troubleshooting
+- **Numpy version conflicts**: MeloTTS may downgrade numpy, causing opencv incompatibility. The `install_deps.sh` script automatically fixes this by reinstalling numpy>=2.
+- **Unidic dictionary issues**: If MeloTTS fails due to missing unidic, the script sets up a symlink from unidic_lite (included with MeloTTS) to the expected unidic directory.
+- **Offline model segfaults**: Ensure total token count (system + user + max_tokens) does not exceed model's `n_ctx`. Check model context window size.
+- **Face recognition failures**: Ensure `backend/assets/face/face.png` exists and is a valid image.
+- **Frontend build errors**: Ensure using Node.js 18+ and npm 9+. Clean `node_modules` and reinstall if needed.
+- **LLM concurrency errors**: Do not make concurrent calls to the same llama-cpp-python `Llama` instance. Use sequential calls or separate instances.
 
 ## Quick Reference
 
