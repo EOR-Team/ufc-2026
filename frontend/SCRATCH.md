@@ -7,8 +7,8 @@
 - **✅ Four-State Workflow System**: Fully implemented with 7-state Pinia store (`idle` → `collecting_conditions` → `selecting_clinic` → `collecting_requirements` → `patching_route` → `completed` → `error`)
 - **✅ API Service Layer**: Complete HTTP client with error handling for all smart triage endpoints
 - **✅ NavigationView Integration**: Workflow system fully integrated with voice-only interaction interface
-- **🔄 Backend Connectivity**: API client ready but requires running backend server for end-to-end testing
-- **🔄 Voice Integration Framework**: UI complete with 250ms long-press FAB, but STT/TTS API integration pending
+- **🔄 Backend Connectivity**: API client ready. STT API audio format compatibility已修复（支持WAV、WebM、MP4、OGG/Opus格式转换），需要安装ffmpeg才能支持非WAV格式。
+- **🔄 Voice Integration Framework**: Complete implementation with voice recording (`useVoiceRecorder`). STT API音频格式兼容性已修复，支持多格式转换，需要安装ffmpeg。Skeleton消息和流式文本显示已实现。集成到NavigationView.vue。
 - **⏳ MedicalView Adaptation**: Navigation workflow complete, medical consultation page needs similar integration
 - **⏳ Testing & Validation**: Manual testing guide available, automated tests not yet implemented
 
@@ -20,11 +20,16 @@
 5. **Environment Configuration**: `.env`-based API endpoint management
 
 ### Next Priority Tasks:
-1. Test workflow system with running backend server
-2. Integrate voice recognition with `/api/voice/stt` endpoint
-3. Connect text-to-speech with `/api/voice/tts` endpoint
-4. Adapt workflow system for MedicalView.vue
-5. Implement WebSocket for real-time voice streaming
+1. **Install ffmpeg** - Required for STT API audio format conversion (WebM → WAV, MP4 → WAV, etc.)
+2. **Test voice interaction system** with running backend server after installing ffmpeg
+3. **Integrate actual streaming animation** for recognized text display
+4. Connect text-to-speech with `/api/voice/tts` endpoint
+5. Adapt workflow system for MedicalView.vue
+6. Implement WebSocket for real-time voice streaming
+7. Add error handling and user feedback improvements
+
+### ✅ Recently Completed:
+- **STT API audio format compatibility** - Implemented backend audio format detection and conversion using `pydub` and `python-magic`
 
 ## 2. Application Scenario & Problem Statement
 
@@ -354,7 +359,7 @@ curl -X GET "http://localhost:8000/api/voice/tts?text=你好，我是智能助�
 
 ### Areas for Improvement:
 1. **Backend API Connectivity**: API service layer implemented but needs actual backend connection and testing
-2. **Voice Recognition Integration**: UI ready but needs STT API integration with `/api/voice/stt` endpoint
+2. **Voice Recognition Integration**: Implementation plan created. Needs Phase 1-5 implementation for voice recording, STT API, skeleton messages, and streaming text display.
 3. **Speech Synthesis Integration**: TTS API endpoints defined but not connected to `/api/voice/tts`
 4. **Testing Infrastructure**: Still no unit or integration tests (TEST_WORKFLOW.md guide added)
 5. **MedicalView Integration**: Medical consultation page still needs workflow system adaptation
@@ -408,13 +413,13 @@ frontend/
   - Integration with existing `NavigationView.vue`
 
 ### 🔄 In Progress:
-- **Voice Recognition Integration**: Connecting the workflow system to actual speech-to-text API
+- **Voice Recognition Integration**: Implementation in progress - detailed plan created for voice recording, STT API, skeleton messages, and streaming text display
 - **Workflow System Testing**: End-to-end testing with backend API integration
 - **MedicalView Integration**: Applying the same workflow pattern to the medical consultation assistant
 - **Error Handling Refinement**: Improving user feedback for API failures and network errors
 
 ### ⏳ Pending Integration:
-1. **Voice Recognition API**: Integrate speech-to-text with backend `/api/voice/stt` endpoint
+1. **Voice Recognition API**: Implementation plan ready - includes voice recording, STT API integration, skeleton messages, and streaming text display
 2. **Speech Synthesis API**: Connect text-to-speech with backend `/api/voice/tts` endpoint
 3. **Actual Backend Connectivity**: Test workflow system with running backend server
 4. **Real-time Voice Streaming**: WebSocket implementation for continuous voice interaction
@@ -438,8 +443,8 @@ frontend/
 - **✅ State Machine Logic**: Implemented and functioning with 7-state transitions
 - **✅ Route Processing Utilities**: `generateOriginalRoute()`, `applyPatchesToRoute()`, `validateRouteContinuity()` functions tested
 - **✅ Pinia Store Integration**: `useWorkflowStore()` and `useApiStore()` properly integrated in NavigationView.vue
-- **🔄 API Connectivity**: API service layer ready but requires running backend server for end-to-end testing
-- **⏳ Voice Integration**: STT/TTS API endpoints defined but not connected to actual speech recognition
+- **🔄 API Connectivity**: API service layer ready but STT API has audio format compatibility issues. Other endpoints require testing with running backend server.
+- **🔄 Voice Integration**: STT API connected but has audio format compatibility issues (WebM → WAV conversion needed). TTS API endpoints defined but not connected.
 
 ### Manual Testing Checklist:
 1. **Build Verification**: Ensure `npm run build` succeeds without errors
@@ -508,7 +513,148 @@ hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)] /* Hover */
 - No sensitive data in frontend code
 - Proper CORS configuration needed for backend APIs
 
-## 13. Summary
+## 13. Voice Interaction API Integration Plan (Draft)
+
+### User Requirements Recap
+
+**Voice Interaction Workflow Specification:**
+1. **Voice Capture**: User presses FAB to start voice recording, releases FAB to end recording. Voice binary data is saved for STT processing.
+2. **STT API Call**: Send binary audio data to backend `/api/voice/stt` endpoint (multipart/form-data with WAV file).
+3. **Skeleton Message Display**: When FAB is released, add a blinking skeleton message to conversation list while waiting for backend response.
+4. **Streaming Text Display**: After backend responds, replace skeleton with recognized text content displayed in streaming fashion (character-by-character or word-by-word animation).
+5. **Workflow Priority**: Implement voice recognition pipeline first, state transitions will be integrated later.
+
+### Technical Analysis
+
+#### Current State:
+- ✅ **Voice UI Framework**: 250ms long-press FAB with `useLongPress(250)` composable
+- ✅ **Visual Feedback**: `VoiceOverlay` with `ListeningIndicator` (audio waves + pulsing rings)
+- ✅ **Message System**: Four-layer message bubble architecture (MessageBubble → BasicMessageBubble → Assistant/UserMessageBubble)
+- ✅ **API Service Layer**: `useApiStore()` with standardized HTTP client and error handling
+- ⏳ **Voice Recording**: No audio capture implementation
+- ⏳ **STT API Integration**: No methods for `/api/voice/stt` endpoint
+- ⏳ **Skeleton Messages**: Message system doesn't support skeleton/loading states
+- ⏳ **Streaming Text Display**: No progressive text reveal animations
+
+#### Backend API Requirements:
+- **STT Endpoint**: `POST /api/voice/stt` (multipart/form-data, `file` field with WAV audio)
+- **Response Format**: `{"text": "recognized text content"}` (JSON)
+- **Audio Format**: WAV format suitable for Web Audio API playback
+
+### Implementation Plan
+
+#### Phase 1: Voice Recording Composable (`/src/composables/useVoiceRecorder.js`)
+- Create `useVoiceRecorder()` composable with MediaRecorder API
+- Integrate with existing `useLongPress` logic:
+  - `start()`: Begin audio recording
+  - `end()`: Stop recording and return audio Blob (WAV format)
+- Handle browser permissions (getUserMedia)
+- Add error handling for microphone access failures
+
+#### Phase 2: STT API Integration (`/src/stores/api.js`)
+- Add `speechToText(audioBlob)` method to `useApiStore`
+- Implement multipart/form-data upload with `FormData`
+- Handle backend response parsing
+- Add loading state management for voice recognition
+- Extend error handling for audio processing failures
+
+#### Phase 3: Skeleton Message System (`/src/components/message-bubbles/`)
+- Extend message type definitions in `/src/types/workflow.js`:
+  - Add `isSkeleton: boolean` property
+  - Add `isStreaming: boolean` property
+  - Add `streamingProgress: number` for progressive display
+- Create `SkeletonMessageBubble.vue` component:
+  - Blinking animation for loading state
+  - Placeholder text or wave indicators
+- Modify `MessageBubble.vue` router to handle skeleton messages
+- Update `ConversationList.vue` to support new message properties
+
+#### Phase 4: Streaming Text Display (`/src/utils/streaming.js`)
+- Create `displayTextStreamingly(element, text, options)` utility
+- Implement character-by-character or word-by-word reveal animation
+- Configurable speed and easing functions
+- Support interruption and completion callbacks
+- Integrate with Vue's reactivity system
+
+#### Phase 5: NavigationView Integration (`/src/views/NavigationView.vue`)
+- Integrate `useVoiceRecorder` with existing `useLongPress` logic
+- Modify `handleVoiceInput()` to:
+  1. Capture audio on FAB release
+  2. Add skeleton message to conversation
+  3. Call `apiStore.speechToText(audioBlob)`
+  4. Replace skeleton with streaming text on response
+  5. Pass recognized text to workflow system
+- Add visual states for recording, processing, and streaming
+- Implement error recovery for failed voice recognition
+
+#### Phase 6: Testing and Validation
+- Manual testing with mock backend responses
+- Audio recording permission testing
+- Streaming animation performance testing
+- Error scenario testing (no microphone, network failure, etc.)
+- Cross-browser compatibility testing (Chrome, Firefox, Safari)
+
+### Technical Considerations
+
+#### Audio Format Compatibility:
+- **Backend Expectation**: WAV format (mono, 16kHz recommended)
+- **Browser Support**: MediaRecorder with `audio/wav` or `audio/webm` codecs
+- **Conversion Needs**: May need `audio/webm` to WAV conversion if browsers don't support WAV directly
+
+#### Performance Optimization:
+- **Audio Quality**: Balance between quality and file size (16kHz mono, 16-bit PCM)
+- **Streaming Animation**: Use CSS transitions or requestAnimationFrame for smooth text reveal
+- **Memory Management**: Clean up audio Blobs after processing to prevent memory leaks
+
+#### User Experience:
+- **Visual Feedback**: Clear indication of recording, processing, and streaming states
+- **Error Recovery**: Graceful handling of microphone permissions and network failures
+- **Accessibility**: Screen reader support for voice interaction states
+
+#### Integration with Workflow System:
+- **Message Coordination**: Skeleton messages must integrate with existing workflow message management
+- **State Management**: Voice processing states should complement workflow states (idle, processing, completed)
+- **Error Propagation**: Voice recognition errors should trigger workflow error state when appropriate
+
+### Success Criteria
+
+1. **Functional Completeness**:
+   - User can record voice via 250ms long-press FAB
+   - Audio is successfully sent to backend STT API
+   - Skeleton message appears during processing
+   - Recognized text streams into conversation
+   - Error states are handled gracefully
+
+2. **Technical Quality**:
+   - Clean separation of concerns (recording, API, UI)
+   - Reusable composables and utilities
+   - Type-safe data flow with JSDoc
+   - Performance-optimized audio processing
+
+3. **User Experience**:
+   - Intuitive voice interaction flow
+   - Clear visual feedback at all stages
+   - Responsive and accessible interface
+   - Smooth animations and transitions
+
+### Estimated Timeline
+
+**Phase 1-2 (Voice Recording + API)**: 2-3 hours
+**Phase 3-4 (Skeleton + Streaming)**: 2-3 hours
+**Phase 5 (Integration)**: 1-2 hours
+**Phase 6 (Testing)**: 1-2 hours
+
+**Total Estimated Effort**: 6-10 hours
+
+### Next Steps
+
+1. Begin implementation with Phase 1 (Voice Recording Composable)
+2. Test audio capture functionality independently
+3. Integrate with existing NavigationView incrementally
+4. Validate each phase before proceeding to next
+5. Update documentation as implementation progresses
+
+## 14. Summary
 
 The UFC-2026 frontend is a well-architected Vue 3 application with a strong focus on user experience and visual design. It implements a hospital intelligent assistant system with voice interaction, facial recognition login, and dual-mode assistance (navigation and medical).
 
@@ -529,7 +675,7 @@ The UFC-2026 frontend is a well-architected Vue 3 application with a strong focu
 - ✅ **Environment Configuration**: `.env` files with API endpoint configuration for development and production
 - ✅ **Workflow Logic Implementation**: Complete four-state workflow with automatic transitions and route processing
 - 🔄 **Backend API Connectivity**: API service layer implemented but needs actual backend connection and testing
-- 🔄 **Voice Recognition Integration**: UI ready with long-press FAB but needs STT API integration (`/api/voice/stt`)
+- 🔄 **Voice Recognition Integration**: Implementation plan created for STT API with voice recording, skeleton messages, and streaming text display. Ready for Phase 1 implementation.
 - 🔄 **Speech Synthesis Integration**: TTS API endpoints defined but not connected to `/api/voice/tts`
 - 🔄 **Testing Infrastructure**: Manual testing guide (`TEST_WORKFLOW.md`) available but no automated tests
 - ⏳ **MedicalView Integration**: Navigation workflow complete but medical consultation page needs adaptation
@@ -537,3 +683,463 @@ The UFC-2026 frontend is a well-architected Vue 3 application with a strong focu
 - ⏳ **Real-time Voice Streaming**: WebSocket implementation for continuous voice interaction pending
 
 The codebase demonstrates professional frontend development practices and is well-positioned for integration with the backend services described in the project documentation.
+
+## 15. Backend Integration Issues & Solutions (2026-02-26)
+
+### Status Update (2026-02-26): Issue Confirmed
+
+**Actual Error Occurred**: The STT API integration failure predicted in this section has now actually occurred during testing. The exact error matches the analysis:
+
+```
+INFO:     127.0.0.1:39332 - "POST /api/voice/stt/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:39332 - "POST /api/voice/stt HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/fastapi/applications.py", line 1134, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/middleware/cors.py", line 95, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/middleware/cors.py", line 153, in simple_response
+    await self.app(scope, receive, send)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/fastapi/routing.py", line 119, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/sites-packages/fastapi/routing.py", line 105, in app
+    response = await f(request)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/fastapi/routing.py", line 424, in app
+    raw_response = await run_endpoint_function(
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/fastapi/routing.py", line 312, in run_endpoint_function
+    return await dependant.call(**values)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/src/router/voice.py", line 32, in stt
+    return JSONResponse( content = {"text": await vi.stt_async()} )
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/src/voice_interaction/voice_interaction.py", line 41, in stt_async
+    return await self.speech_recognizer.recognize_async()
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/src/voice_interaction/speech2text.py", line 52, in recognize_async
+    audio, sr = await loop.run_in_executor(None, sf.read, self.audio_path)
+  File "/home/n1ghts4kura/.pyenv/versions/3.10.13/lib/python3.10/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/soundfile.py", line 305, in read
+    with SoundFile(file, 'r', samplerate, channels,
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/soundfile.py", line 690, in __init__
+    self._file = self._open(file, mode_int, closefd)
+  File "/home/n1ghts4kura/Desktop/ufc-2026/backend/venv/lib/python3.10/site-packages/soundfile.py", line 1265, in _open
+    raise LibsndfileError(err, prefix="Error opening {0!r}: ".format(self.name))
+soundfile.LibsndfileError: Error opening './assets/input.wav': Format not recognised.
+```
+
+**Validation of Root Cause**: The error confirms our analysis:
+1. **Audio Format Mismatch**: Frontend sends WebM/Opus audio (browser default) but backend expects WAV format
+2. **Incorrect File Extension**: Backend saves file with `.wav` extension regardless of actual format
+3. **Library Limitation**: `soundfile` library fails to read non-WAV file with `.wav` extension
+4. **Missing Format Detection**: No validation of uploaded file format before processing
+
+**Immediate Action Required**: Implement **Solution 2 (Backend Audio Format Support)** as the most practical approach:
+1. Install `pydub` and `python-magic` in backend dependencies
+2. Update `voice.py` to detect audio format using magic bytes
+3. Convert WebM/Opus to WAV format using `pydub` before processing
+4. Add proper error handling for unsupported formats
+
+**Implementation Priority**:
+- **High**: Backend format detection and conversion (Solution 2)
+- **Medium**: Frontend WAV encoding fallback (Solution 1)
+- **Low**: Route path consistency (trailing slash fix)
+
+**Next Steps**: Follow the implementation plan in Phase A (Immediate Backend Fixes).
+
+### 🎯 Implementation Status (2026-02-26)
+
+#### ✅ 已完成的修复：
+
+1. **后端依赖更新** (`requirements.txt`):
+   - 添加了 `pydub` 和 `python-magic` 依赖
+   - 已安装到虚拟环境中
+
+2. **音频格式检测逻辑** (`voice.py`):
+   - 使用 `magic` 库检测音频文件格式
+   - 支持格式: WAV, WebM/Matroska/EBML, MP4, OGG/Opus
+   - 添加了详细的格式检测日志
+
+3. **音频格式转换**:
+   - 使用 `pydub` 进行非WAV格式到WAV的转换
+   - 自动转换为16kHz单声道格式（符合后端要求）
+   - 添加了转换失败的错误处理
+
+4. **路由兼容性**:
+   - 添加了 `@voice_router.post("/stt/")` 支持尾部斜杠
+   - 避免FastAPI的307重定向
+
+5. **错误处理改进**:
+   - 提供清晰的格式不支持错误消息
+   - WebM转换失败时提示ffmpeg安装需求
+   - 统一的异常处理和日志记录
+
+#### ⚠️ 当前限制与要求：
+
+1. **ffmpeg依赖**:
+   - `pydub` 需要 `ffmpeg` 或 `avconv` 进行音频格式转换
+   - 当前系统未安装ffmpeg，非WAV格式转换会失败
+   - **安装命令**: `sudo dnf install ffmpeg` (Fedora) 或 `sudo apt-get install ffmpeg` (Ubuntu)
+
+2. **前端格式兼容性**:
+   - 前端 `useVoiceRecorder.js` 尝试的格式顺序: `audio/wav`, `audio/webm;codecs=opus`, `audio/webm`, `audio/mp4`
+   - 浏览器通常不支持WAV录制，会回退到WebM/Opus
+   - 安装ffmpeg后，WebM→WAV转换将正常工作
+
+#### 🔧 测试验证：
+
+1. **WAV格式测试**: ✅ 通过
+2. **格式检测逻辑**: ✅ 通过
+3. **WebM格式识别**: ✅ 通过 (检测为"EBML file")
+4. **API端点访问**: ✅ 通过 (HTTP 200响应)
+5. **WebM转换**: ✅ 通过 (安装ffmpeg后)
+
+#### 🚨 新发现的问题 (2026-02-26): STT API 响应格式不匹配
+
+**问题现象**:
+- 用户尝试长按语音输入，前端显示 `...`，然后显示 `语音识别失败`
+- 调试日志显示完整流程:
+  ```
+  [API Store] Request successful: {text: '你好我是 d'}
+  [NavigationView] STT API 调用失败: undefined
+  ```
+
+**根因分析**:
+1. **API响应格式不匹配**:
+   - 后端 `voice.py` 返回简略格式: `{"text": "识别的文本"}`
+   - 前端 `NavigationView.vue` 检查 `if (!sttResponse.success)` 失败，因为响应中没有 `success` 字段
+   - 前端错误处理将骨架屏消息更新为 `"语音识别失败，请重试"`
+
+2. **重复事件触发问题**:
+   - 日志显示 `FAB 松开，结束语音录制` 被触发了两次
+   - 第二次触发时录音器已停止，导致 `[VoiceRecorder] 录音器未启动或已停止`
+   - 可能原因是事件冒泡或用户快速点击
+
+3. **前端API兼容性**:
+   - `api.js` 的 `request()` 方法正确解析了 `{text: "..."}` 格式
+   - 但 `speechToText()` 方法没有规范化响应格式
+   - `NavigationView.vue` 的 `handlePressEnd` 缺少防止重复处理的完整检查
+
+**解决方案实施**:
+
+1. **前端API兼容性修复** (`api.js`):
+   ```javascript
+   const speechToText = async (audioBlob) => {
+     const response = await request('/voice/stt/', { method: 'POST', body: formData })
+
+     // 兼容两种格式：
+     // 格式1: {text: "recognized text"} (后端当前格式)
+     // 格式2: {success: true, data: {text: "recognized text"}} (标准格式)
+
+     if (response.success === true && response.data && response.data.text) {
+       return response
+     } else if (response.text) {
+       return {
+         success: true,
+         data: { text: response.text }
+       }
+     } else {
+       return { success: false, error: 'Unknown response format' }
+     }
+   }
+   ```
+
+2. **防止重复处理** (`NavigationView.vue`):
+   ```javascript
+   // 添加额外的检查
+   if (!voiceRecorder.isRecording.value) {
+     console.warn('[NavigationView] 没有正在进行的录音，忽略松开事件')
+     isProcessingVoice.value = false
+     return
+   }
+   ```
+
+3. **保持后端兼容性**:
+   - 撤销了对 `voice.py` 的格式修改，保持 `{text: "..."}` 格式
+   - 避免破坏其他可能依赖此格式的客户端
+
+**验证状态**:
+- ✅ **ffmpeg安装**: 已完成，WebM→WAV转换正常工作
+- ✅ **音频格式兼容性**: WebM检测和转换成功 (46895字节，audio/webm;codecs=opus)
+- ✅ **语音识别准确性**: 识别结果为 `"你好我是 d"`，基本准确
+- ✅ **API响应处理**: 前端现在能正确处理两种格式
+- ✅ **重复事件处理**: 添加了录音状态检查，防止重复处理
+- ⚠️ **工作流集成**: 等待测试识别文本传递到工作流系统的流程
+
+**技术细节**:
+1. **音频录制**: Chrome浏览器使用 `audio/webm;codecs=opus` 格式
+2. **格式转换**: 后端检测为WebM，使用ffmpeg转换为WAV (16kHz, mono)
+3. **语音识别**: sherpa_onnx返回 `"你好我是 d"`，识别基本准确
+4. **事件处理**: 长按250ms阈值工作正常，需要防止重复触发
+
+**预期工作流**:
+1. 用户长按FAB 250ms → 开始录音
+2. 松开FAB → 停止录音，获取WebM/Opus音频 (约46KB)
+3. 发送到 `/api/voice/stt/` → 后端转换为WAV → sherpa_onnx识别
+4. 返回 `{text: "识别的文本"}` → 前端转换为标准格式
+5. 更新骨架屏消息为识别文本 → 调用 `handleVoiceInput()` → 工作流处理
+
+**成功指标**:
+- 语音识别成功显示用户说话内容
+- 识别文本正确传递到四状态工作流系统
+- 无重复事件或错误状态
+
+#### 📋 剩余任务：
+
+1. **安装ffmpeg** (高优先级):
+   ```bash
+   sudo dnf install ffmpeg  # Fedora
+   # 或
+   sudo apt-get install ffmpeg  # Ubuntu
+   ```
+
+2. **验证完整工作流**:
+   - 安装ffmpeg后测试前端语音录制和识别
+   - 验证WebM→WAV转换质量
+   - 测试跨浏览器兼容性 (Chrome, Firefox, Safari)
+
+3. **前端备选方案** (可选):
+   - 如果ffmpeg安装不可行，考虑前端WAV编码
+   - 使用Web Audio API手动生成WAV格式
+
+### Issue: STT API Integration Failure
+
+**Error Log Analysis:**
+```
+INFO:     127.0.0.1:39332 - "POST /api/voice/stt/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:39332 - "POST /api/voice/stt HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+...
+soundfile.LibsndfileError: Error opening './assets/input.wav': Format not recognised.
+```
+
+**Root Cause Analysis:**
+
+1. **Route Path Issue**: Frontend sends request to `/api/voice/stt/` (with trailing slash), backend redirects to `/api/voice/stt` (without slash). This is a FastAPI routing behavior but not critical.
+
+2. **Audio Format Compatibility**: Primary issue - Backend expects standard WAV format (16kHz, mono, PCM) but receives incompatible audio format:
+   - Frontend's `useVoiceRecorder` tries WAV first, but browsers have limited WAV support via MediaRecorder
+   - Most browsers record as `audio/webm` or `audio/ogg` format
+   - Backend's `soundfile` library cannot read non-WAV files saved with `.wav` extension
+
+3. **Audio File Validation**: Backend `speech2text.py` reads from hardcoded path `./assets/input.wav` without validation:
+   - No format detection or conversion
+   - Assumes 16kHz sample rate without resampling support
+   - No file corruption handling
+
+**Technical Details:**
+
+#### Backend Voice Pipeline:
+1. `voice.py` - Receives raw bytes, saves as `./assets/input.wav`
+2. `voice_interaction.py` - Calls `SpeechRecognizer().recognize_async()`
+3. `speech2text.py` - Uses `soundfile.read()` to load WAV file, expects 16kHz mono PCM
+
+#### Frontend Audio Capture:
+- `useVoiceRecorder.js` tries MIME types: `audio/wav`, `audio/webm;codecs=opus`, `audio/webm`, `audio/mp4`
+- Most browsers support `audio/webm` or `audio/webm;codecs=opus`
+- Saved Blob has correct MIME type but wrong file extension on backend
+
+### Solutions
+
+#### Solution 1: Frontend Audio Conversion (Recommended)
+**Implement WAV encoding in JavaScript** before sending to backend:
+- Use `AudioContext` to decode WebM/Opus to raw PCM
+- Manually create WAV headers with correct format
+- Ensure 16kHz, mono, 16-bit PCM encoding
+- Libraries like `wav-encoder` or manual implementation
+
+#### Solution 2: Backend Audio Format Support
+**Extend backend to handle multiple formats**:
+- Detect actual audio format using `filetype` or `magic` bytes
+- Convert to WAV using `pydub` or `ffmpeg`
+- Support WebM, OGG, MP3, etc.
+
+#### Solution 3: Hybrid Approach (Immediate Fix)
+**Quick fixes for testing**:
+
+1. **Frontend Fix**: Ensure consistent MIME type and add format validation
+2. **Backend Fix**: Add audio format detection and conversion
+3. **Path Fix**: Update route to accept trailing slash
+
+### Implementation Plan
+
+#### Phase A: Immediate Backend Fixes (Priority)
+1. **Route Update**: Add `@voice_router.post("/stt/")` with trailing slash
+2. **Audio Validation**: Check file magic bytes before processing
+3. **Format Conversion**: Install `pydub` and add WebM→WAV conversion
+4. **Error Handling**: Better error messages for unsupported formats
+
+#### Phase B: Frontend Audio Improvements
+1. **WAV Encoding**: Implement proper WAV encoding in `useVoiceRecorder`
+2. **Format Detection**: Log actual recorded format for debugging
+3. **Fallback Strategy**: Try multiple codecs and select most compatible
+
+#### Phase C: End-to-End Testing
+1. **Format Testing**: Test with Chrome, Firefox, Safari audio formats
+2. **Quality Testing**: Verify 16kHz mono encoding works correctly
+3. **Performance Testing**: Measure encoding/decoding latency
+
+### Code Changes Required
+
+#### Backend (`/backend/src/router/voice.py`):
+```python
+# Add format detection and conversion
+import magic  # or filetype
+from pydub import AudioSegment
+
+# In stt() function:
+file_bytes = await file.read()
+file_type = magic.from_buffer(file_bytes[:1024])
+
+if 'WebM' in file_type or 'Matroska' in file_type:
+    # Convert WebM to WAV
+    audio = AudioSegment.from_file(io.BytesIO(file_bytes), format="webm")
+    audio = audio.set_frame_rate(16000).set_channels(1)
+    audio.export(input_wav_path, format="wav")
+elif 'WAV' in file_type:
+    # Direct save
+    with open(input_wav_path, "wb") as f:
+        f.write(file_bytes)
+else:
+    raise HTTPException(400, f"Unsupported audio format: {file_type}")
+```
+
+#### Frontend (`/src/composables/useVoiceRecorder.js`):
+```javascript
+// Add WAV encoding function
+async function encodeAsWav(audioBlob) {
+  // Decode using Web Audio API
+  const arrayBuffer = await audioBlob.arrayBuffer()
+  const audioContext = new AudioContext()
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+
+  // Convert to 16kHz mono, 16-bit PCM
+  // Create WAV headers and data
+  // Return new Blob with 'audio/wav' MIME type
+}
+```
+
+### Testing Steps
+
+1. **Install Dependencies**:
+   ```bash
+   cd backend
+   pip install python-magic pydub
+   ```
+
+2. **Test Backend Fix**:
+   ```bash
+   curl -X POST -F "file=@test.webm" http://localhost:8000/api/voice/stt
+   ```
+
+3. **Test Frontend Integration**:
+   - Record voice in browser
+   - Check network tab for request/response
+   - Verify audio format in backend logs
+
+### Success Criteria
+
+1. ✅ Backend accepts WebM/Opus/WAV formats
+2. ✅ Frontend records and sends compatible audio
+3. ✅ STT returns accurate text recognition
+4. ✅ Error handling for unsupported formats
+5. ✅ Cross-browser compatibility (Chrome, Firefox, Safari)
+
+### Timeline Estimate
+- **Phase A (Backend Fix)**: 2-3 hours
+- **Phase B (Frontend Improvement)**: 3-4 hours
+- **Phase C (Testing)**: 1-2 hours
+- **Total**: 6-9 hours
+
+### Next Actions
+1. Implement backend audio format detection and conversion
+2. Test with sample WebM/WAV files using curl
+3. Update frontend to log actual audio format
+4. Deploy fixes and run end-to-end tests
+
+## 16. CORS Issue with select_clinic Endpoint (2026-02-26)
+
+### Problem Description
+User reports duplicate voice input messages and "Failed to fetch" error. Debugging reveals:
+
+**Symptoms:**
+1. Two "我有点头疼" user messages appear in conversation
+2. Assistant responds with "已分析你的症状:头疼..."
+3. Then "Failed to fetch" error appears
+
+**Root Cause Analysis:**
+1. **Duplicate User Messages**: Fixed by modifying `processUserInput()` in workflow.js to check for duplicate user messages
+2. **CORS Issue**: The `select_clinic` API endpoint has CORS policy problems:
+   - `collect_conditions` endpoint works fine (returns 200 OK with CORS headers)
+   - `select_clinic` endpoint blocked by CORS: `No 'Access-Control-Allow-Origin' header is present on the requested resource`
+
+**Console Error:**
+```
+Access to fetch at 'http://localhost:8000/api/triager/select_clinic/' from origin 'http://localhost:5173'
+has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+```
+
+**Testing Results:**
+- `POST /api/triager/collect_conditions/` → ✅ 200 OK with proper CORS headers
+- `POST /api/triager/select_clinic/` → ❌ CORS error, "Failed to fetch"
+
+### Possible Causes
+1. **Backend Route Missing**: `select_clinic` endpoint might not be properly defined in backend router
+2. **CORS Middleware Issue**: CORS middleware might not be applied to all routes or might have configuration issues
+3. **Server Error**: `select_clinic` endpoint might return server error (500) without CORS headers
+4. **Route Path Mismatch**: Possible trailing slash issue or incorrect route path
+
+### Debugging Steps Taken
+1. Added duplicate message prevention in `workflow.js`:
+   ```javascript
+   // Check if the last message is a user message with the same content
+   const isDuplicateUserMessage = lastMessage &&
+     lastMessage.name === 'user' &&
+     lastMessage.message === userInput &&
+     lastMessage.isSkeleton === false
+
+   // Only add user message if it's not a duplicate
+   if (!isDuplicateUserMessage) {
+     addUserMessage(userInput)
+   }
+   ```
+2. Added detailed logging to `handleConditionsInput()` for API debugging
+3. Tested backend endpoints directly via browser console fetch()
+4. Identified CORS issue with `select_clinic` endpoint
+
+### Required Fixes
+1. **Backend CORS Configuration**: Ensure CORS headers are properly set for all endpoints, including error responses
+2. **Backend Route Verification**: Check if `select_clinic` endpoint is correctly implemented in `backend/src/router/triager.py`
+3. **Error Handling**: Improve error handling in `autoSelectClinic()` to provide better user feedback
+
+### Immediate Actions
+1. Check backend `triager.py` router for `select_clinic` endpoint implementation
+2. Verify CORS middleware configuration in backend
+3. Test backend directly with curl to see if endpoint exists and returns proper headers
+4. If endpoint missing, implement it or fix the route definition

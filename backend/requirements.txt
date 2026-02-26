@@ -21,6 +21,8 @@ sherpa-onnx
 soundfile
 python-multipart
 ./melotts-0.1.2-py3-none-any.whl
+pydub
+python-magic
 
 # Face recognition
 opencv-python

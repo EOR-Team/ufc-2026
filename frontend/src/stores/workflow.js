@@ -123,7 +123,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
       message,
       timestamp: Date.now(),
       isProcessing: options.isProcessing || false,
-      isError: options.isError || false
+      isError: options.isError || false,
+      isSkeleton: options.isSkeleton || false,
+      isStreaming: options.isStreaming || false,
+      streamingProgress: options.streamingProgress || 0
     }
 
     messages.value.push(messageObj)
@@ -159,8 +162,20 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return
     }
 
-    // Add user message
-    addUserMessage(userInput)
+    // Check if the last message is a user message with the same content
+    // This prevents duplicate user messages when voice input updates skeleton message
+    const lastMessage = messages.value.length > 0 ? messages.value[messages.value.length - 1] : null
+    const isDuplicateUserMessage = lastMessage &&
+      lastMessage.name === 'user' &&
+      lastMessage.message === userInput &&
+      lastMessage.isSkeleton === false
+
+    // Only add user message if it's not a duplicate
+    if (!isDuplicateUserMessage) {
+      addUserMessage(userInput)
+    } else {
+      console.log('[Workflow] Skipping duplicate user message:', userInput)
+    }
 
     // Process based on current state
     switch (currentState.value) {
@@ -178,11 +193,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const handleConditionsInput = async (userInput) => {
+    console.log('[Workflow] handleConditionsInput called with:', userInput)
     const processingMsg = addAssistantMessage('正在分析你的症状...', { isProcessing: true })
 
     try {
       // Call API to collect conditions
+      console.log('[Workflow] Calling collectConditions API...')
       const response = await apiStore.collectConditions(userInput)
+      console.log('[Workflow] collectConditions API response:', response)
 
       if (response.success && response.data) {
         // Update conditions
@@ -199,6 +217,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
         await autoSelectClinic()
       } else {
         // API error
+        console.error('[Workflow] collectConditions API error:', response.error)
         updateLastMessage({
           message: `抱歉，分析症状时出现错误：${response.error || '未知错误'}`,
           isProcessing: false,
@@ -208,6 +227,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
         transitionToError(new Error(response.error || 'Failed to collect conditions'))
       }
     } catch (error) {
+      console.error('[Workflow] Exception in handleConditionsInput:', error)
       updateLastMessage({
         message: `处理症状时出现错误：${error.message}`,
         isProcessing: false,

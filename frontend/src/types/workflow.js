@@ -71,6 +71,9 @@
  * @property {string} message - Message content
  * @property {boolean} [isProcessing] - Whether the message is being processed
  * @property {boolean} [isError] - Whether the message indicates an error
+ * @property {boolean} [isSkeleton] - Whether the message is a skeleton/loading placeholder
+ * @property {boolean} [isStreaming] - Whether the message is streaming text content
+ * @property {number} [streamingProgress] - Streaming progress (0-100) for progressive display
  */
 
 /**

@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import BasicMessageBubble from './BasicMessageBubble.vue'
+import SkeletonMessageBubble from './SkeletonMessageBubble.vue'
 
 const props = defineProps({
   /**
@@ -33,6 +34,27 @@ const props = defineProps({
   customIcon: {
     type: String,
     default: null
+  },
+  /**
+   * 是否为骨架屏/加载状态消息
+   */
+  isSkeleton: {
+    type: Boolean,
+    default: false
+  },
+  /**
+   * 是否为流式显示消息
+   */
+  isStreaming: {
+    type: Boolean,
+    default: false
+  },
+  /**
+   * 流式显示进度（0-100）
+   */
+  streamingProgress: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -56,10 +78,23 @@ const bubbleConfig = computed(() => {
 
 // 计算属性
 const { name: bubbleName, icon: bubbleIcon, isAssistant } = bubbleConfig.value
+
+// 决定渲染哪个组件
+const shouldRenderSkeleton = computed(() => {
+  return props.isSkeleton
+})
 </script>
 
 <template>
+  <SkeletonMessageBubble
+    v-if="shouldRenderSkeleton"
+    :name="bubbleName"
+    :icon="bubbleIcon"
+    :is-assistant="isAssistant"
+    animation-type="blinking"
+  />
   <BasicMessageBubble
+    v-else
     :message="message"
     :name="bubbleName"
     :icon="bubbleIcon"

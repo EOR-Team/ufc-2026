@@ -41,12 +41,17 @@ async def lifespan(app: FastAPI):
 
 # 创建 FastAPI 应用
 app = FastAPI(lifespan=lifespan)
+
+# 配置 CORS 中间件，解决前端跨域访问问题
+# 重要：必须在 include_router 之前添加中间件
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"],  # 允许所有来源，开发环境使用
+    allow_credentials=True,  # 允许携带认证信息
+    allow_methods=["*"],  # 允许所有 HTTP 方法
+    allow_headers=["*"],  # 允许所有请求头
+    expose_headers=["*"],  # 暴露所有响应头给前端
+    max_age=600,  # 预检请求缓存时间（秒）
 )
 
 app.include_router(api_router)

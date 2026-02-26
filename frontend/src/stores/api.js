@@ -46,11 +46,17 @@ export const useApiStore = defineStore('api', () => {
     log(`Making request to: ${url}`, options)
 
     try {
+      // 准备请求头
+      const headers = { ...options.headers }
+
+      // 如果不是 FormData，默认设置 JSON Content-Type
+      // FormData 会自动设置正确的 Content-Type 和 boundary
+      if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json'
+      }
+
       const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers
-        },
+        headers,
         ...options
       })
 
@@ -213,6 +219,62 @@ export const useApiStore = defineStore('api', () => {
   }
 
   /**
+   * Convert speech to text using backend STT API
+   * @param {Blob} audioBlob - Audio blob from voice recording
+   * @returns {Promise<ApiResponse>} API response with recognized text
+   */
+  const speechToText = async (audioBlob) => {
+    log('Converting speech to text:', {
+      size: audioBlob.size,
+      type: audioBlob.type
+    })
+
+    // 创建 FormData 并添加音频文件
+    const formData = new FormData()
+    formData.append('file', audioBlob, 'audio.wav')
+
+    // 调用基础 request 方法
+    const response = await request('/voice/stt/', {
+      method: 'POST',
+      body: formData
+      // 注意：FormData 会自动设置正确的 Content-Type
+      // 我们修改的 request 方法会检测到 FormData 并不设置默认的 JSON Content-Type
+    })
+
+    log('STT API raw response:', response)
+
+    // 处理不同的响应格式
+    // 格式1: {text: "recognized text"} (旧格式)
+    // 格式2: {success: true, data: {text: "recognized text"}} (标准格式)
+
+    if (response.success === true && response.data && response.data.text) {
+      // 已经是标准格式，直接返回
+      log('STT response in standard format')
+      return response
+    } else if (response.text) {
+      // 旧格式：{text: "recognized text"}
+      log('STT response in legacy format, converting to standard format')
+      return {
+        success: true,
+        data: {
+          text: response.text
+        }
+      }
+    } else if (response.success === false) {
+      // 已经是错误格式
+      log('STT response indicates failure')
+      return response
+    } else {
+      // 未知格式
+      log('STT response in unknown format')
+      return {
+        success: false,
+        error: 'Unknown response format from STT API'
+      }
+    }
+  }
+
+  /**
    * Clear error state
    */
   const clearError = () => {
@@ -246,6 +308,7 @@ export const useApiStore = defineStore('api', () => {
     patchRoute,
     getRoutePatch,
     parseCommands,
+    speechToText,
     clearError,
     reset
   }
