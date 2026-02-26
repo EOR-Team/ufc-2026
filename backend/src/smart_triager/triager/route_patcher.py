@@ -304,19 +304,21 @@ async def patch_route_offline(
 
     model = get_offline_chat_model()
 
-    get_response_func = lambda: model.create_chat_completion(
-        messages = [
-            {"role": "system", "content": utils.instruction_token_wrapper(route_patcher_instructions.replace(
-                "$origin_route_mark$",
-                json.dumps([link.model_dump() for link in generate_route(destination_clinic_id)], ensure_ascii=False, indent=4)
-            ))},
-            {"role": "user", "content": utils.input_token_wrapper("Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) ))}
-        ],
-        response_format = {"type": "text"},
-        temperature = 0.6,
-        max_tokens = 1024,
-        logit_bias = _logit_bias()
-    )
+    def get_response_func():
+        model.reset()
+        return model.create_chat_completion(
+            messages = [
+                {"role": "system", "content": utils.instruction_token_wrapper(route_patcher_instructions.replace(
+                    "$origin_route_mark$",
+                    json.dumps([link.model_dump() for link in generate_route(destination_clinic_id)], ensure_ascii=False, indent=4)
+                ))},
+                {"role": "user", "content": utils.input_token_wrapper("Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) ))}
+            ],
+            response_format = {"type": "text"},
+            temperature = 0.6,
+            max_tokens = 1024,
+            logit_bias = _logit_bias()
+        )
 
     response = await asyncio.to_thread(get_response_func)
     response_text = str(response["choices"][0]["message"]["content"])

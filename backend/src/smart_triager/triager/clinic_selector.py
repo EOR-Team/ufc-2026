@@ -336,16 +336,18 @@ async def select_clinic_offline(
     
     offline_chat_model = get_offline_chat_model()
     
-    get_response_func = lambda: offline_chat_model.create_chat_completion(
-        messages = [
-            {"role": "system", "content": utils.instruction_token_wrapper(clinic_selector_instructions)},
-            {"role": "user", "content": utils.input_token_wrapper(json.dumps(input_data, ensure_ascii=False))}
-        ],
-        response_format = {"type": "text"},
-        temperature = temperature,
-        max_tokens = max_tokens,
-        logit_bias = _logit_bias()
-    )
+    def get_response_func():
+        offline_chat_model.reset()
+        return offline_chat_model.create_chat_completion(
+            messages = [
+                {"role": "system", "content": utils.instruction_token_wrapper(clinic_selector_instructions)},
+                {"role": "user", "content": utils.input_token_wrapper(json.dumps(input_data, ensure_ascii=False))}
+            ],
+            response_format = {"type": "text"},
+            temperature = temperature,
+            max_tokens = max_tokens,
+            logit_bias = _logit_bias()
+        )
     
     response = await asyncio.to_thread(get_response_func) 
     response_text = str(response["choices"][0]["message"]["content"]) # this type can be ignored
