@@ -256,10 +256,10 @@ async def patch_route_online(
 
     agent = Agent(
         name = "Route Patcher Agent in Hospital Route Planner",
-        instructions = route_patcher_instructions.replace(
+        instructions = utils.instruction_token_wrapper(route_patcher_instructions.replace(
             "$origin_route_mark$",
             json.dumps([link.model_dump() for link in generate_route(destination_clinic_id)], ensure_ascii=False, indent=4)
-        ),
+        )),
         model = get_online_reasoning_model(),
         model_settings = ModelSettings(
             temperature = 0.6,
@@ -269,7 +269,7 @@ async def patch_route_online(
 
     response = await Runner().run(
         starting_agent = agent,
-        input = "Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) ),
+        input = utils.input_token_wrapper("Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) )),
         max_turns = 1 # idk whether the agent will ask multiple rounds of questions
     )
 
@@ -306,11 +306,11 @@ async def patch_route_offline(
 
     get_response_func = lambda: model.create_chat_completion(
         messages = [
-            {"role": "system", "content": route_patcher_instructions.replace(
+            {"role": "system", "content": utils.instruction_token_wrapper(route_patcher_instructions.replace(
                 "$origin_route_mark$",
                 json.dumps([link.model_dump() for link in generate_route(destination_clinic_id)], ensure_ascii=False, indent=4)
-            )},
-            {"role": "user", "content": "Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) )}
+            ))},
+            {"role": "user", "content": utils.input_token_wrapper("Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) ))}
         ],
         response_format = {"type": "text"},
         temperature = 0.6,

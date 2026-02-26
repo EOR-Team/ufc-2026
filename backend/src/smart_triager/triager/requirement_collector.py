@@ -109,7 +109,7 @@ async def collect_requirement_online(input: str) -> RequirementCollectorOutput |
 
     agent = Agent(
         name = "Requirement Collector Agent in Hospital Route Planner",
-        instructions = requirement_collector_instructions,
+        instructions = utils.instruction_token_wrapper(requirement_collector_instructions),
         model = get_online_chat_model(),
         model_settings = ModelSettings(
             temperature = 0.7,
@@ -119,7 +119,7 @@ async def collect_requirement_online(input: str) -> RequirementCollectorOutput |
 
     response = await Runner().run(
         starting_agent = agent,
-        input = "Input: {}".format(input),
+        input = utils.input_token_wrapper("Input: {}".format(input)),
         max_turns = 1 # idk whether the agent will ask multiple rounds of questions
     )
 
@@ -148,8 +148,8 @@ async def collect_requirement_offline(input: str) -> RequirementCollectorOutput 
 
     get_response_func = lambda: offline_reasoning_model.create_chat_completion(
         messages = [
-            {"role": "system", "content": requirement_collector_instructions},
-            {"role": "user", "content": "Input: {}".format(input)}
+            {"role": "system", "content": utils.instruction_token_wrapper(requirement_collector_instructions)},
+            {"role": "user", "content": utils.input_token_wrapper("Input: {}".format(input))}
         ],
         response_format = {"type": "text"},
         temperature = 0.7,

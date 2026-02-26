@@ -258,7 +258,7 @@ async def select_clinic_online(conditions: ClinicSelectionOutput) -> ClinicSelec
     # 创建Agent
     agent = Agent(
         name = "Clinic Selection Agent in Hospital Route Planner",
-        instructions = clinic_selector_instructions,
+        instructions = utils.instruction_token_wrapper(clinic_selector_instructions),
         model = get_online_chat_model(),
         model_settings = ModelSettings(
             temperature = 0.6,
@@ -269,7 +269,7 @@ async def select_clinic_online(conditions: ClinicSelectionOutput) -> ClinicSelec
     # 运行Agent
     response = await Runner().run(
         starting_agent = agent,
-        input = json.dumps(conditions.dict(), ensure_ascii=False, indent=4),
+        input = utils.input_token_wrapper(json.dumps(conditions.dict(), ensure_ascii=False, indent=4)),
         max_turns = 1 # idk whether the agent will ask multiple rounds of questions
     )
     
@@ -338,8 +338,8 @@ async def select_clinic_offline(
     
     get_response_func = lambda: offline_chat_model.create_chat_completion(
         messages = [
-            {"role": "system", "content": clinic_selector_instructions},
-            {"role": "user", "content": json.dumps(input_data, ensure_ascii=False)}
+            {"role": "system", "content": utils.instruction_token_wrapper(clinic_selector_instructions)},
+            {"role": "user", "content": utils.input_token_wrapper(json.dumps(input_data, ensure_ascii=False))}
         ],
         response_format = {"type": "text"},
         temperature = temperature,
