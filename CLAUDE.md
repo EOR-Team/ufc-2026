@@ -125,6 +125,7 @@ ufc-2026/
 | `backend/src/router/triager.py` | Reference implementation of a feature router |
 | `frontend/docs/ui_design_aesthetics.md` | Complete UI design system (v1.1.0) with visual specifications |
 | `frontend/docs/ui_design_principles.md` | Core design principles and development guidelines |
+| `frontend/docs/state_transition_system_design.md` | Four-state workflow system design with voice integration patterns |
 | `frontend/src/components/FixedAspectContainer.vue` | Fixed-size page container component (all pages must use) |
 | `frontend/src/views/HomeView.vue` | Home page implementation with voice interaction and message dialogs |
 | `frontend/src/composables/useLongPress.js` | Long-press interaction logic (250ms threshold) |
