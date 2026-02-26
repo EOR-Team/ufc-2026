@@ -23,7 +23,7 @@
         <div class="absolute inset-0 flex items-center justify-center overflow-hidden rounded-3xl bg-white shadow-xl border border-slate-200">
           <!-- 摄像头画面（有摄像头时显示） -->
           <video
-            v-show="cameraCount > 0"
+            v-show="permissionState === 'granted' && cameraCount > 0"
             ref="videoRef"
             autoplay
             playsinline
@@ -32,7 +32,7 @@
           />
 
           <!-- 无摄像头时的占位图形 -->
-          <div v-if="cameraCount === 0 || cameraCount === -1" class="relative w-full h-full flex items-center justify-center">
+          <div v-if="permissionState !== 'granted' || cameraCount <= 0" class="relative w-full h-full flex items-center justify-center">
             <span class="material-symbols-outlined text-[160px] text-primary/10 select-none">face</span>
           </div>
 
@@ -53,6 +53,22 @@
 
           <!-- 错误提示 -->
           <div v-if="error" class="absolute bottom-2 left-0 right-0 text-center text-[10px] text-red-400 px-2">{{ error }}</div>
+
+          <!-- 摄像头权限按钮 -->
+          <button
+            v-if="showCameraPermissionButton"
+            @click="handleCameraPermissionClick"
+            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 flex items-center justify-center w-16 h-16 bg-primary/90 hover:bg-primary rounded-full shadow-lg transition-all active:scale-95"
+            :class="{
+              'bg-red-500/90 hover:bg-red-600': permissionState === 'denied',
+              'cursor-not-allowed opacity-75': isCheckingPermission
+            }"
+            :disabled="isCheckingPermission"
+          >
+            <span class="material-symbols-outlined text-white text-2xl">
+              {{ permissionState === 'denied' ? 'warning' : 'videocam' }}
+            </span>
+          </button>
         </div>
 
         <!-- 角标装饰 -->
@@ -92,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import FixedAspectContainer from '@/components/FixedAspectContainer.vue'
 import { useCamera } from '@/composables/useCamera'
@@ -100,8 +116,70 @@ import { useCamera } from '@/composables/useCamera'
 const router = useRouter()
 const isLoggingIn = ref(false)
 
-const { videoRef, cameraCount, error, start } = useCamera()
-onMounted(() => start())
+const { videoRef, cameraCount, error, start, permissionState, requestPermission, queryCameraPermission, setupPermissionListener } = useCamera()
+const isCheckingPermission = ref(false)
+
+// 页面加载时初始化权限状态
+onMounted(async () => {
+  // 查询初始权限状态
+  const state = await queryCameraPermission()
+  permissionState.value = state
+
+  // 设置权限状态监听
+  setupPermissionListener()
+
+  // 如果已有权限，自动启动摄像头
+  if (permissionState.value === 'granted') {
+    await start()
+  }
+})
+
+// 计算是否显示权限按钮
+const showCameraPermissionButton = computed(() => {
+  return permissionState.value !== 'granted'
+})
+
+// 按钮点击处理
+const handleCameraPermissionClick = async () => {
+  if (permissionState.value === 'denied') {
+    // 显示详细的权限恢复指引
+    showPermissionDeniedAlert()
+    return
+  }
+
+  // prompt状态：请求权限
+  isCheckingPermission.value = true
+  try {
+    const granted = await requestPermission()
+    if (granted) {
+      // 权限获取成功，启动摄像头
+      await start()
+    }
+  } finally {
+    isCheckingPermission.value = false
+  }
+}
+
+// 权限被拒绝时的alert提示
+const showPermissionDeniedAlert = () => {
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  let message = '摄像头权限已被拒绝。\n\n'
+
+  if (isMobile) {
+    message += '请在系统设置中启用：\n'
+    message += '1. 打开手机设置\n'
+    message += '2. 找到浏览器应用\n'
+    message += '3. 启用摄像头权限'
+  } else {
+    message += '请在浏览器设置中启用：\n'
+    message += '1. 点击地址栏左侧锁形图标\n'
+    message += '2. 选择"网站设置"\n'
+    message += '3. 找到"摄像头"选项\n'
+    message += '4. 更改为"允许"'
+  }
+
+  alert(message)
+}
 
 const handleFaceLogin = async () => {
   if (isLoggingIn.value) return
