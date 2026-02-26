@@ -6,6 +6,7 @@ import SettingsToggle from '@/components/settings/SettingsToggle.vue'
 import SettingsSlider from '@/components/settings/SettingsSlider.vue'
 import SettingsLink from '@/components/settings/SettingsLink.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
+import SettingsItem from '@/components/settings/SettingsItem.vue'
 
 const router = useRouter()
 
@@ -23,6 +24,41 @@ const speechRateLabel = computed(() => {
   if (speechRate.value <= 75) return '1.25x'
   return '1.5x'
 })
+
+// 麦克风权限请求
+const requestMicrophonePermission = async () => {
+  try {
+    // 检查浏览器支持
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('❌ 您的浏览器不支持麦克风访问功能')
+      return
+    }
+
+    // 请求麦克风权限
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+
+    // 立即停止流（我们只需要权限，不需要实际录音）
+    stream.getTracks().forEach(track => track.stop())
+
+    // 权限获取成功
+    alert('✅ 麦克风权限已获得！现在可以使用语音功能。')
+
+  } catch (error) {
+    // 权限获取失败
+    const errorMessage = error.message || '未知错误'
+
+    // 根据错误类型提供不同提示
+    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+      alert(`❌ 麦克风权限被拒绝：${errorMessage}\n\n请在浏览器设置中启用麦克风权限。`)
+    } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+      alert(`❌ 未找到麦克风设备：${errorMessage}\n\n请确保设备连接了麦克风。`)
+    } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+      alert(`❌ 麦克风无法访问：${errorMessage}\n\n麦克风可能被其他应用占用。`)
+    } else {
+      alert(`❌ 麦克风权限获取失败：${errorMessage}`)
+    }
+  }
+}
 </script>
 
 <template>
@@ -78,6 +114,18 @@ const speechRateLabel = computed(() => {
           icon="speed"
           label="语速"
           :display-value="speechRateLabel"
+        />
+      </SettingsSection>
+
+      <!-- 权限设置 -->
+      <SettingsSection title="权限设置">
+        <SettingsItem
+          icon="mic"
+          label="麦克风权限"
+          description="点击请求麦克风访问权限"
+          :divider="true"
+          row-class="py-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition-colors"
+          @click="requestMicrophonePermission"
         />
       </SettingsSection>
 

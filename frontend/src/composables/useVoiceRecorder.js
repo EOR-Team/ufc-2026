@@ -36,27 +36,23 @@ export function useVoiceRecorder() {
 
       // 检查浏览器支持
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('您的浏览器不支持语音录制功能')
+        error.value = '您的浏览器不支持语音录制功能'
+        hasPermission.value = false
+        return false
       }
 
-      // 请求麦克风权限
-      const constraints = {
-        audio: {
-          channelCount: 1, // 单声道
-          sampleRate: 16000, // 16kHz，符合后端推荐
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      }
+      // 使用最简单的约束
+      const constraints = { audio: true }
 
+      // 尝试获取权限
       mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
+
       hasPermission.value = true
-      console.log('[VoiceRecorder] 麦克风权限获取成功')
       return true
     } catch (err) {
-      error.value = `麦克风权限获取失败: ${err.message}`
-      console.error('[VoiceRecorder] 权限获取失败:', err)
+      const errName = err.name || '未知错误'
+      const errMsg = err.message || '未知错误信息'
+      error.value = `麦克风权限获取失败: ${errMsg}`
       hasPermission.value = false
       return false
     }
@@ -102,7 +98,6 @@ export function useVoiceRecorder() {
         }
       }
 
-      console.log('[VoiceRecorder] 使用音频格式:', selectedMimeType || '浏览器默认格式')
 
       const options = selectedMimeType ? { mimeType: selectedMimeType } : {}
       mediaRecorder = new MediaRecorder(mediaStream, options)
@@ -116,7 +111,6 @@ export function useVoiceRecorder() {
 
       // 设置录音错误处理
       mediaRecorder.onerror = (event) => {
-        console.error('[VoiceRecorder] 录音错误:', event.error)
         error.value = `录音错误: ${event.error?.message || '未知错误'}`
         stopRecording()
       }
@@ -124,12 +118,10 @@ export function useVoiceRecorder() {
       // 开始录音
       mediaRecorder.start(100) // 每100ms收集一次数据
       isRecording.value = true
-      console.log('[VoiceRecorder] 开始录音')
 
       return true
     } catch (err) {
       error.value = `开始录音失败: ${err.message}`
-      console.error('[VoiceRecorder] 开始录音失败:', err)
       isRecording.value = false
       return false
     }
@@ -143,8 +135,7 @@ export function useVoiceRecorder() {
     return new Promise((resolve) => {
       try {
         if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-          console.warn('[VoiceRecorder] 录音器未启动或已停止')
-          resolve(null)
+            resolve(null)
           return
         }
 
@@ -153,8 +144,7 @@ export function useVoiceRecorder() {
           isRecording.value = false
 
           if (audioChunks.length === 0) {
-            console.warn('[VoiceRecorder] 未录制到音频数据')
-            resolve(null)
+                resolve(null)
             return
           }
 
@@ -162,17 +152,14 @@ export function useVoiceRecorder() {
           const mimeType = mediaRecorder.mimeType || 'audio/webm'
           const audioBlob = new Blob(audioChunks, { type: mimeType })
 
-          console.log(`[VoiceRecorder] 录音完成，大小: ${audioBlob.size} 字节，格式: ${mimeType}`)
           resolve(audioBlob)
         }
 
         // 停止录音
         mediaRecorder.stop()
-        console.log('[VoiceRecorder] 停止录音')
 
       } catch (err) {
         error.value = `停止录音失败: ${err.message}`
-        console.error('[VoiceRecorder] 停止录音失败:', err)
         isRecording.value = false
         resolve(null)
       }
@@ -188,7 +175,6 @@ export function useVoiceRecorder() {
       try {
         mediaRecorder.stop()
       } catch (err) {
-        console.warn('[VoiceRecorder] 清理时停止录音失败:', err)
       }
     }
 
@@ -203,7 +189,6 @@ export function useVoiceRecorder() {
     mediaRecorder = null
     audioChunks = []
 
-    console.log('[VoiceRecorder] 资源已清理')
   }
 
   // 组件卸载时自动清理

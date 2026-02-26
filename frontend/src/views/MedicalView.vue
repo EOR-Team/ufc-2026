@@ -12,7 +12,7 @@ import { useViewportOverflow } from '@/composables/useViewportOverflow'
 const router = useRouter()
 
 // 语音长按状态
-const { isActive: isListening, start, end } = useLongPress(250)
+const { isActive: isListening, start, end } = useLongPress(500)
 
 // 内容溢出检测（自动挂载监听）
 useViewportOverflow()

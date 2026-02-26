@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import FixedAspectContainer from '@/components/FixedAspectContainer.vue'
 import AppTopBar from '@/components/AppTopBar.vue'
@@ -15,15 +15,30 @@ import { useApiStore } from '@/stores/api.js'
 const router = useRouter()
 
 // 语音长按状态
-const { isActive: isListening, start: longPressStart, end: longPressEnd } = useLongPress(250)
+const { isActive: isListening, start: longPressStart, end: longPressEnd } = useLongPress(500)
 
 // 语音录制
 const voiceRecorder = useVoiceRecorder()
 const isProcessingVoice = ref(false)
-const currentSkeletonMessageId = ref(null)
 
 // 内容溢出检测（自动挂载监听）
 useViewportOverflow()
+
+// 监听长按状态变化，在长按成功时开始录音
+watch(isListening, async (newVal, oldVal) => {
+  if (newVal === true && oldVal === false) {
+    // 长按成功，开始录音
+    // 避免重复启动录音
+    if (voiceRecorder.isRecording.value) {
+      return
+    }
+    const started = await voiceRecorder.startRecording()
+    if (!started) {
+      // 注意：录音失败但不结束长按状态，保持长按激活
+      // 这样用户仍然可以看到 VoiceOverlay 并知道长按成功
+    }
+  }
+})
 
 // 工作流状态管理
 const workflowStore = useWorkflowStore()
@@ -41,32 +56,19 @@ onMounted(() => {
   }
 })
 
-// 处理按下 FAB（开始录音）
+// 处理按下 FAB（启动长按计时器）
 const handlePressStart = async () => {
-  console.log('[NavigationView] FAB 按下，开始语音录制')
-
   // 开始长按计时器（显示 VoiceOverlay）
   longPressStart()
-
-  // 开始语音录制
-  const started = await voiceRecorder.startRecording()
-  if (!started) {
-    console.error('[NavigationView] 语音录制启动失败')
-    // 如果录制失败，结束长按状态
-    longPressEnd()
-  }
 }
 
 // 处理松开 FAB（结束录音并发送到 STT）
 const handlePressEnd = async () => {
-  console.log('[NavigationView] FAB 松开，结束语音录制')
-
   // 结束长按计时器（隐藏 VoiceOverlay）
   longPressEnd()
 
   // 如果正在处理中，忽略
   if (isProcessingVoice.value) {
-    console.warn('[NavigationView] 语音处理中，忽略新的松开事件')
     return
   }
 
@@ -75,7 +77,6 @@ const handlePressEnd = async () => {
 
   // 额外的检查：确保有正在进行的录音
   if (!voiceRecorder.isRecording.value) {
-    console.warn('[NavigationView] 没有正在进行的录音，忽略松开事件')
     isProcessingVoice.value = false
     return
   }
@@ -85,31 +86,24 @@ const handlePressEnd = async () => {
     const audioBlob = await voiceRecorder.stopRecording()
 
     if (!audioBlob) {
-      console.error('[NavigationView] 未获取到音频数据')
       isProcessingVoice.value = false
       return
     }
 
-    console.log(`[NavigationView] 获取到音频数据，大小: ${audioBlob.size} 字节，类型: ${audioBlob.type}`)
 
     // 添加骨架屏消息到对话
-    console.log('[NavigationView] 添加骨架屏消息')
     const skeletonMessage = workflowStore.addUserMessage('...', {
       isSkeleton: true,
       isStreaming: false,
       isProcessing: true
     })
 
-    // 保存骨架屏消息的索引（最后一条消息）
-    const skeletonMessageIndex = workflowStore.messages.length - 1
-    console.log(`[NavigationView] 骨架屏消息索引: ${skeletonMessageIndex}`)
+    // 骨架屏消息是最后一条消息
 
     // 发送音频到 STT API
-    console.log('[NavigationView] 发送音频到 STT API...')
     const sttResponse = await apiStore.speechToText(audioBlob)
 
     if (!sttResponse.success) {
-      console.error('[NavigationView] STT API 调用失败:', sttResponse.error)
 
       // 更新骨架屏消息为错误状态
       workflowStore.updateLastMessage({
@@ -126,10 +120,8 @@ const handlePressEnd = async () => {
 
     // 获取识别到的文本
     const recognizedText = sttResponse.data?.text || ''
-    console.log('[NavigationView] 语音识别结果:', recognizedText)
 
     if (!recognizedText.trim()) {
-      console.warn('[NavigationView] 识别结果为空')
 
       // 更新骨架屏消息为空结果提示
       workflowStore.updateLastMessage({
@@ -145,7 +137,6 @@ const handlePressEnd = async () => {
     }
 
     // 更新骨架屏消息为流式文本消息
-    console.log('[NavigationView] 更新消息为流式文本')
     workflowStore.updateLastMessage({
       message: recognizedText,
       isSkeleton: false,
@@ -159,7 +150,6 @@ const handlePressEnd = async () => {
     await handleVoiceInput(recognizedText)
 
   } catch (error) {
-    console.error('[NavigationView] 语音处理过程中发生错误:', error)
 
     // 更新最后一条消息为错误状态
     if (workflowStore.messages.length > 0) {
@@ -192,6 +182,7 @@ const handleVoiceInput = async (text) => {
   // 处理用户输入
   await workflowStore.processUserInput(input)
 }
+
 </script>
 
 <template>

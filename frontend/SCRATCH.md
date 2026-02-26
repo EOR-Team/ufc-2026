@@ -1194,3 +1194,33 @@ After backend server restart:
 2. Add streaming text animation for recognized speech
 3. Integrate text-to-speech with `/api/voice/tts` endpoint
 4. Adapt workflow system for MedicalView.vue
+
+## 18. 麦克风权限管理功能实现 (2026-02-26)
+
+### 问题背景
+用户在移动设备（Microsoft Edge on Android）上访问应用时，长按FAB无法触发录音功能。核心问题是麦克风权限请求时机不当和权限状态管理缺失。
+
+### 解决方案
+在设置页面添加麦克风权限管理功能：
+
+1. **UI集成**：在SettingsView.vue中添加"权限设置"区域
+2. **交互设计**：使用SettingsItem组件，点击触发权限请求
+3. **结果反馈**：使用alert()明确告知用户权限请求结果
+
+### 实现详情
+- **组件选择**：使用SettingsItem而非SettingsSlider或SettingsToggle
+- **权限请求**：直接调用getUserMedia({ audio: true })，符合浏览器"用户手势直接触发"要求
+- **错误处理**：根据错误类型提供不同的用户提示
+- **状态管理**：不保存权限状态，每次点击重新请求
+
+### 技术要点
+1. **浏览器兼容性**：检查navigator.mediaDevices.getUserMedia支持
+2. **权限生命周期**：获取权限后立即停止MediaStream，避免占用麦克风
+3. **错误分类**：区分NotAllowedError、NotFoundError、NotReadableError等
+
+### 用户流程
+1. 用户进入设置页面
+2. 在"权限设置"区点击"麦克风权限"
+3. 浏览器弹出权限请求对话框
+4. 用户允许/拒绝后，应用显示对应提示
+5. 用户知晓当前麦克风访问状态
