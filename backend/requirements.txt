@@ -28,3 +28,6 @@ python-magic
 opencv-python
 face_recognition
 numpy
+
+# Performance monitoring
+psutil>=5.9.0

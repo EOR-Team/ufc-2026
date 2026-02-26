@@ -1,4 +1,5 @@
 *.wav
+log/
 
 # Claude Code
 SCRATCH.md
