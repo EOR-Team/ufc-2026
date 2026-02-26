@@ -1224,3 +1224,254 @@ After backend server restart:
 3. 浏览器弹出权限请求对话框
 4. 用户允许/拒绝后，应用显示对应提示
 5. 用户知晓当前麦克风访问状态
+
+## 19. Nginx HTTPS 代理配置实现 (2026-02-26)
+
+### 问题背景
+用户在移动设备（Microsoft Edge on Android）上访问应用时，麦克风访问需要HTTPS协议。开发环境通常使用HTTP，导致麦克风权限请求失败。需要将前端开发服务器配置为HTTPS访问以启用跨域麦克风访问。
+
+### 解决方案
+使用Nginx反向代理将本地HTTP开发服务器（localhost:5173）暴露为HTTPS服务（localhost:9000）。
+
+### 实现文件
+
+#### 1. Nginx 配置文件
+**文件位置**: `/home/n1ghts4kura/Desktop/ufc-2026/nginx.example.conf`
+
+**核心功能**:
+- 监听HTTPS端口 `9000`，自动将HTTP请求重定向到HTTPS
+- 代理所有请求到Vite开发服务器 `localhost:5173`
+- 支持Vue Router history模式
+- 包含WebSocket代理，支持Vite热模块替换（HMR）
+- 可选的后端API代理（注释状态）
+- 支持自定义Nginx安装的MIME类型配置
+
+**关键配置**:
+```nginx
+# HTTPS服务器 - 主开发代理
+server {
+    listen       9000 ssl;
+    # 允许通过IP地址或localhost访问
+    server_name  localhost _;
+
+    # 自签名SSL证书
+    ssl_certificate      /home/n1ghts4kura/ssl/selfsigned.crt;
+    ssl_certificate_key  /home/n1ghts4kura/ssl/selfsigned.key;
+
+    # 代理到Vite开发服务器
+    location / {
+        proxy_pass http://localhost:5173;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket支持
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+**MIME类型配置选项**:
+1. **自定义mime.types文件**:
+   ```nginx
+   include /home/n1ghts4kura/global_nginx/conf/mime.types;
+   ```
+2. **内置最小化MIME类型**（配置文件已包含）
+
+#### 2. SSL证书生成脚本
+**文件位置**: `/home/n1ghts4kura/Desktop/ufc-2026/generate-ssl-cert.sh`
+
+**功能**:
+- 自动创建自签名SSL证书（有效期365天）
+- 设置正确的文件权限（密钥600，证书644）
+- 支持 `localhost`、`127.0.0.1`和`0.0.0.0`域名
+
+**重要提示**:
+- 脚本使用`sudo`运行，`$HOME`环境变量会变为`/root`
+- **必须编辑脚本中的路径**：将`/home/n1ghts4kura`替换为实际主目录路径
+- 路径定义在脚本第16行：`SSL_DIR="/home/n1ghts4kura/ssl"`
+
+#### 3. 配置指南文档
+**文件位置**: `/home/n1ghts4kura/Desktop/ufc-2026/frontend/docs/nginx_configuration_guide.md`
+
+**内容**: 完整的安装、配置、使用和故障排除指南。
+
+### 前端路由验证
+**文件位置**: `/home/n1ghts4kura/Desktop/ufc-2026/frontend/src/router/index.js`
+
+**验证结果**: 前端已使用`createWebHistory()`模式，无需修改：
+```javascript
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),  // ✅ 已经是history模式
+  routes: [...]
+})
+```
+
+### 遇到的问题与解决方案
+
+#### 问题1: ERR_SSL_PROTOCOL_ERROR 错误
+**现象**: 访问`https://<ip>:9000`时显示SSL协议错误
+
+**原因分析**:
+1. 证书仅包含`localhost`和`127.0.0.1`的SAN（Subject Alternative Name）
+2. Nginx的`server_name`仅配置为`localhost`
+3. 通过IP地址访问时，SSL证书验证失败
+
+**解决方案**:
+1. **更新Nginx配置**: 将`server_name`改为`localhost _`，支持通配符
+2. **更新证书生成脚本**: 添加`0.0.0.0`到SAN扩展中
+
+#### 问题2: 403 Forbidden 静态资源错误
+**现象**: 浏览器空白，控制台显示静态资源（JS、CSS、图标）加载失败，HTTP状态码403
+
+**原因分析**:
+1. 缺少MIME类型配置，Nginx无法正确识别文件类型
+2. 静态资源路径未正确代理到Vite开发服务器
+
+**解决方案**:
+1. **添加MIME类型配置**: 在`http`块中添加`types`定义或`include mime.types`
+2. **添加静态资源代理**: 为常见静态文件扩展名添加`location`块，代理到Vite服务器
+
+#### 问题3: 自定义Nginx安装的MIME类型路径
+**现象**: 用户使用自定义编译安装的Nginx，标准路径`/etc/nginx/mime.types`不存在
+
+**解决方案**:
+1. **方案A**: 使用自定义`mime.types`文件，添加`include`指令
+2. **方案B**: 使用内置最小化MIME类型定义（配置文件已包含）
+
+### 自定义Nginx安装配置
+
+#### 查找mime.types文件
+```bash
+find ~ -name "mime.types" 2>/dev/null | grep nginx
+```
+
+#### 配置示例
+```nginx
+# 使用自定义mime.types文件
+include /home/n1ghts4kura/global_nginx/conf/mime.types;
+```
+
+### 配置步骤总结
+
+#### 1. 准备配置文件
+```bash
+cd /home/n1ghts4kura/Desktop/ufc-2026
+cp nginx.example.conf nginx.conf
+```
+
+#### 2. 编辑nginx.conf
+- 找到第66-67行的`ssl_certificate`和`ssl_certificate_key`配置
+- 将`/home/n1ghts4kura`替换为实际主目录路径
+- 如需使用自定义mime.types文件，取消注释`include`指令并设置正确路径
+
+#### 3. 生成SSL证书
+```bash
+# 先编辑脚本中的路径
+vim generate-ssl-cert.sh  # 修改第16行SSL_DIR路径
+
+# 添加执行权限并运行
+chmod +x generate-ssl-cert.sh
+sudo ./generate-ssl-cert.sh
+```
+
+#### 4. 启动Nginx服务
+```bash
+# 测试配置文件语法
+sudo nginx -c /home/n1ghts4kura/Desktop/ufc-2026/nginx.conf -t
+
+# 启动Nginx
+sudo nginx -c /home/n1ghts4kura/Desktop/ufc-2026/nginx.conf
+
+# 检查运行状态
+ps aux | grep nginx
+sudo netstat -tlnp | grep :9000
+```
+
+#### 5. 启动前端开发服务器
+```bash
+cd frontend
+npm run dev
+```
+
+### 访问方式
+
+#### 1. 浏览器访问
+- 地址: **https://localhost:9000** 或 **https://<局域网IP>:9000**
+- 首次访问会显示安全警告（自签名证书的正常现象）
+- 点击"高级" → "继续前往localhost（不安全）"
+
+#### 2. 麦克风权限测试
+1. 进入设置页面 → 点击"麦克风权限"按钮
+2. 浏览器应正常弹出麦克风权限请求对话框
+3. 授权后即可使用语音功能
+
+#### 3. 路由测试
+- 访问`https://localhost:9000/settings`（应正常工作，无`#`符号）
+- 使用底部导航栏切换页面（应保持历史记录）
+- 浏览器后退/前进按钮应正常工作
+
+### 技术要点
+
+#### 1. HTTPS要求
+- 浏览器安全策略要求麦克风访问必须通过HTTPS协议
+- 开发环境通常使用HTTP，需要Nginx代理提供HTTPS访问
+
+#### 2. Vue Router History模式
+- 前端已正确配置`createWebHistory()`
+- Nginx代理需要正确处理所有路由请求，回退到`index.html`
+
+#### 3. 跨域麦克风访问
+- HTTPS解决了跨域麦克风访问的安全限制
+- 浏览器安全策略要求"用户手势直接触发"权限请求
+
+#### 4. 自签名证书
+- 开发环境使用自签名证书，浏览器会显示安全警告
+- 可添加到系统信任列表以避免警告（生产环境应使用受信任的CA证书）
+
+### 验证指标
+
+#### 1. 功能验证
+- ✅ 通过HTTPS访问应用
+- ✅ 静态资源正确加载（JS、CSS、图标）
+- ✅ 麦克风权限请求正常弹出
+- ✅ Vue Router历史模式正常工作
+
+#### 2. 技术验证
+- ✅ Nginx配置文件语法正确
+- ✅ SSL证书生成和配置正确
+- ✅ 代理配置正确转发到Vite开发服务器
+- ✅ WebSocket代理支持Vite热模块替换
+
+#### 3. 兼容性验证
+- ✅ 支持通过localhost和IP地址访问
+- ✅ 支持自定义Nginx安装路径
+- ✅ 支持多浏览器HTTPS访问
+
+### 后续优化建议
+
+#### 1. 生产环境配置
+- 使用受信任的CA签发证书（如Let's Encrypt）
+- 调整静态文件服务为直接提供构建产物
+- 添加安全性头部和性能优化配置
+
+#### 2. 开发体验优化
+- 添加脚本自动化证书生成和Nginx启动
+- 添加环境检测和配置验证
+- 提供一键启动开发环境的脚本
+
+#### 3. 移动设备优化
+- 测试移动浏览器HTTPS兼容性
+- 优化移动端麦克风权限请求流程
+- 添加移动设备特定配置提示
+
+### 相关文件
+| 文件 | 用途 | 位置 |
+|------|------|------|
+| `nginx.example.conf` | Nginx主配置文件 | 项目根目录 |
+| `generate-ssl-cert.sh` | SSL证书生成脚本 | 项目根目录 |
+| `nginx_configuration_guide.md` | 完整配置指南 | `frontend/docs/` |
+| `router/index.js` | Vue Router配置 | `frontend/src/router/` |
+| `vite.config.js` | Vite构建配置 | `frontend/` |
