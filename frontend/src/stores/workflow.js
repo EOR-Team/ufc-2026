@@ -63,6 +63,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
   // Message history
   const messages = ref([])
 
+  // TTS sync: workflow pauses here until NavigationView signals audio is ready
+  let _ttsReadyResolve = null
+
   // API store
   const apiStore = useApiStore()
 
@@ -88,11 +91,19 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const hasMapData = computed(() => mapData.value !== null)
   const hasHighlightedMap = computed(() => highlightedMap.value !== null)
 
+  // Node ID → display name map (nav nodes without names fall back to ID)
+  const nodeNameMap = computed(() => {
+    if (!mapData.value?.nodes) return {}
+    return Object.fromEntries(
+      mapData.value.nodes.filter(n => n.name).map(n => [n.id, n.name])
+    )
+  })
+
   const formattedOriginalRoute = computed(() =>
-    hasOriginalRoute.value ? formatRouteForDisplay(originalRoute.value) : ''
+    hasOriginalRoute.value ? formatRouteForDisplay(originalRoute.value, nodeNameMap.value) : ''
   )
   const formattedModifiedRoute = computed(() =>
-    hasModifiedRoute.value ? formatRouteForDisplay(modifiedRoute.value) : ''
+    hasModifiedRoute.value ? formatRouteForDisplay(modifiedRoute.value, nodeNameMap.value) : ''
   )
 
   // State transition methods
@@ -123,11 +134,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
     originalRoute.value = null
     modifiedRoute.value = null
     commands.value = null
-    mapData.value = null
     highlightedMap.value = null
     showMapOverlay.value = false
 
     messages.value = []
+
+    if (_ttsReadyResolve) {
+      _ttsReadyResolve()
+      _ttsReadyResolve = null
+    }
 
     console.log('Workflow reset')
   }
@@ -142,7 +157,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       isError: options.isError || false,
       isSkeleton: options.isSkeleton || false,
       isStreaming: options.isStreaming || false,
-      streamingProgress: options.streamingProgress || 0
+      streamingProgress: options.streamingProgress || 0,
+      isAwaitingTTS: options.isAwaitingTTS || false
     }
 
     messages.value.push(messageObj)
@@ -161,6 +177,28 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (messages.value.length > 0) {
       const lastIndex = messages.value.length - 1
       messages.value[lastIndex] = { ...messages.value[lastIndex], ...updates }
+    }
+  }
+
+  // TTS sync helpers
+  const waitForTTS = (timestamp) => {
+    const idx = messages.value.findLastIndex(m => m.timestamp === timestamp)
+    if (idx !== -1) {
+      messages.value[idx] = { ...messages.value[idx], isAwaitingTTS: true }
+    }
+    return new Promise(resolve => {
+      _ttsReadyResolve = resolve
+    })
+  }
+
+  const signalTTSReady = () => {
+    const idx = messages.value.findLastIndex(m => m.isAwaitingTTS)
+    if (idx !== -1) {
+      messages.value[idx] = { ...messages.value[idx], isAwaitingTTS: false }
+    }
+    if (_ttsReadyResolve) {
+      _ttsReadyResolve()
+      _ttsReadyResolve = null
     }
   }
 
@@ -229,6 +267,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
           isProcessing: false
         })
 
+        // Wait for TTS to be ready before auto-advancing
+        await waitForTTS(processingMsg.timestamp)
+
         // Auto-transition to selecting clinic
         await autoSelectClinic()
       } else {
@@ -280,7 +321,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
           // Update message
           updateLastMessage({
-            message: `已为你选择 ${clinicId.value} 诊室。请告诉我你有什么个性化需求（例如：需要轮椅、需要优先就诊等），我将为你优化路线。`,
+            message: `已为你选择 ${nodeNameMap.value[clinicId.value] ?? clinicId.value} 。请告诉我你有什么个性化需求（例如：去看医生前上个洗手间等），我将为你优化路线。`,
             isProcessing: false
           })
 
@@ -327,6 +368,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
           message: `已记录你的${reqCount > 0 ? ` ${reqCount} 项` : ''}需求。现在根据诊室和需求优化路线...`,
           isProcessing: false
         })
+
+        // Wait for TTS to be ready before auto-advancing
+        await waitForTTS(processingMsg.timestamp)
 
         // Auto-transition to patching route
         await autoPatchRoute()
@@ -518,6 +562,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     autoPatchRoute,
     quickStartDemo,
     showMap,
-    hideMap
+    hideMap,
+    signalTTSReady
   }
 })

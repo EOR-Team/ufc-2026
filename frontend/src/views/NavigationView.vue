@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, computed, ref, watch } from 'vue'
+import { onMounted, computed, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import FixedAspectContainer from '@/components/FixedAspectContainer.vue'
 import AppTopBar from '@/components/AppTopBar.vue'
@@ -12,6 +12,7 @@ import { useVoiceRecorder } from '@/composables/useVoiceRecorder'
 import { useViewportOverflow } from '@/composables/useViewportOverflow'
 import { useWorkflowStore } from '@/stores/workflow.js'
 import { useApiStore } from '@/stores/api.js'
+import { transformTextForSpeech } from '@/utils/textToSpeech.js'
 
 const router = useRouter()
 
@@ -48,6 +49,83 @@ const apiStore = useApiStore()
 // 使用工作流存储的消息
 const navigationMessages = computed(() => workflowStore.messages)
 
+// 滚动容器引用
+const scrollContainer = ref(null)
+
+// 新消息时自动滚动到底部
+watch(
+  () => navigationMessages.value.length,
+  async () => {
+    await nextTick()
+    if (scrollContainer.value) {
+      scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
+    }
+  }
+)
+
+// TTS 播放
+const playTTS = async (text) => {
+  const speechText = transformTextForSpeech(text)
+  if (!speechText.trim()) return
+  const audioBlob = await apiStore.tts(speechText)
+  if (!audioBlob) return
+  const audioUrl = URL.createObjectURL(audioBlob)
+  const audio = new Audio(audioUrl)
+  audio.onended = () => URL.revokeObjectURL(audioUrl)
+  audio.play().catch(err => console.warn('[TTS] Playback failed:', err))
+}
+
+const ttsProcessedTimestamps = new Set()
+let ttsFirstAssistantSkipped = false
+
+watch(
+  () => workflowStore.messages,
+  (messages) => {
+    messages.forEach(msg => {
+      if (msg.name !== 'assistant') return
+
+      // Case 1: awaiting TTS — fetch audio first, then reveal message and play
+      if (
+        msg.isAwaitingTTS &&
+        !ttsProcessedTimestamps.has(msg.timestamp)
+      ) {
+        ttsProcessedTimestamps.add(msg.timestamp)
+        ;(async () => {
+          const speechText = transformTextForSpeech(msg.message)
+          const audioBlob = speechText.trim() ? await apiStore.tts(speechText) : null
+          // Reveal message and unblock workflow
+          workflowStore.signalTTSReady()
+          // Play audio after reveal
+          if (audioBlob) {
+            const audioUrl = URL.createObjectURL(audioBlob)
+            const audio = new Audio(audioUrl)
+            audio.onended = () => URL.revokeObjectURL(audioUrl)
+            audio.play().catch(err => console.warn('[TTS] Playback failed:', err))
+          }
+        })()
+        return
+      }
+
+      // Case 2: normal revealed message
+      if (
+        !msg.isProcessing &&
+        !msg.isSkeleton &&
+        !msg.isError &&
+        !msg.isAwaitingTTS &&
+        !ttsProcessedTimestamps.has(msg.timestamp)
+      ) {
+        ttsProcessedTimestamps.add(msg.timestamp)
+        if (!ttsFirstAssistantSkipped) {
+          ttsFirstAssistantSkipped = true
+          return
+        }
+        playTTS(msg.message)
+      }
+    })
+  },
+  { deep: true }
+)
+
 
 // 初始化工作流
 onMounted(async () => {
@@ -55,6 +133,9 @@ onMounted(async () => {
   const mapResponse = await apiStore.getMap()
   if (mapResponse.success) {
     workflowStore.mapData = mapResponse.data
+  } else if (mapResponse.nodes) {
+    // /api/map/ 直接返回地图数据，无 success 包装
+    workflowStore.mapData = mapResponse
   }
 
   // 如果工作流处于空闲状态且没有消息，自动开始
@@ -224,7 +305,7 @@ const handleMapClose = () => {
       <!-- 滚动容器：独立处理滚动 -->
       <div class="relative flex-1 min-h-0">
         <!-- 内容容器 -->
-        <div class="overflow-y-auto no-scrollbar" style="height: 400px;">
+        <div ref="scrollContainer" class="overflow-y-auto no-scrollbar" style="height: 400px;">
           <ConversationList
             :messages="navigationMessages"
             :show-map-button="showMapButton"

@@ -15,7 +15,7 @@ import magic
 from pydub import AudioSegment
 
 from src.voice_interaction.voice_interaction import VoiceInteraction
-
+from src import logger # type: ignore
 
 voice_router = APIRouter(prefix="/voice")
 
@@ -35,13 +35,13 @@ async def stt(file: bytes = File(...)):
         file_type = magic.from_buffer(file[:1024]) if len(file) >= 1024 else magic.from_buffer(file)
 
         # 记录检测到的格式
-        print(f"[STT] 检测到音频格式: {file_type}")
+        logger.info(f"[STT] 检测到音频格式: {file_type}")
 
         if 'WAV' in file_type or 'RIFF' in file_type:
             # 直接保存 WAV 文件
             with open(input_wav_path, "wb") as f:
                 f.write(file)
-            print(f"[STT] 保存 WAV 文件成功，大小: {len(file)} 字节")
+            logger.info(f"[STT] 保存 WAV 文件成功，大小: {len(file)} 字节")
 
         elif 'WebM' in file_type or 'Matroska' in file_type or 'EBML' in file_type:
             try:
@@ -49,9 +49,9 @@ async def stt(file: bytes = File(...)):
                 audio = AudioSegment.from_file(io.BytesIO(file), format="webm")
                 audio = audio.set_frame_rate(16000).set_channels(1)  # 16kHz 单声道
                 audio.export(input_wav_path, format="wav")
-                print(f"[STT] 转换 WebM 到 WAV 成功，大小: {len(file)} 字节")
+                logger.info(f"[STT] 转换 WebM 到 WAV 成功，大小: {len(file)} 字节")
             except Exception as conv_error:
-                print(f"[STT] WebM转换失败: {conv_error}")
+                logger.error(f"[STT] WebM转换失败: {conv_error}")
                 raise HTTPException(
                     status_code=400,
                     detail=f"WebM音频转换失败，需要ffmpeg支持。请安装ffmpeg或使用其他格式。错误: {conv_error}"
@@ -63,9 +63,9 @@ async def stt(file: bytes = File(...)):
                 audio = AudioSegment.from_file(io.BytesIO(file), format="mp4")
                 audio = audio.set_frame_rate(16000).set_channels(1)
                 audio.export(input_wav_path, format="wav")
-                print(f"[STT] 转换 MP4 到 WAV 成功，大小: {len(file)} 字节")
+                logger.info(f"[STT] 转换 MP4 到 WAV 成功，大小: {len(file)} 字节")
             except Exception as conv_error:
-                print(f"[STT] MP4转换失败: {conv_error}")
+                logger.error(f"[STT] MP4转换失败: {conv_error}")
                 raise HTTPException(
                     status_code=400,
                     detail=f"MP4音频转换失败，需要ffmpeg支持。错误: {conv_error}"
@@ -77,9 +77,9 @@ async def stt(file: bytes = File(...)):
                 audio = AudioSegment.from_file(io.BytesIO(file), format="ogg")
                 audio = audio.set_frame_rate(16000).set_channels(1)
                 audio.export(input_wav_path, format="wav")
-                print(f"[STT] 转换 OGG/Opus 到 WAV 成功，大小: {len(file)} 字节")
+                logger.info(f"[STT] 转换 OGG/Opus 到 WAV 成功，大小: {len(file)} 字节")
             except Exception as conv_error:
-                print(f"[STT] OGG/Opus转换失败: {conv_error}")
+                logger.error(f"[STT] OGG/Opus转换失败: {conv_error}")
                 raise HTTPException(
                     status_code=400,
                     detail=f"OGG/Opus音频转换失败，需要ffmpeg支持。错误: {conv_error}"
@@ -93,6 +93,9 @@ async def stt(file: bytes = File(...)):
 
         # 调用语音识别
         recognized_text = await vi.stt_async()
+
+        logger.info(f"[STT] 传入语音，识别结果: {recognized_text}")
+
         return JSONResponse(content={"text": recognized_text})
 
     except HTTPException:
@@ -110,6 +113,8 @@ async def tts(text: str):
     """
     文本转语音接口
     """
+
+    logger.info(f"[TTS] 收到文本转语音请求，文本内容: {text}")
 
     vi = VoiceInteraction()
 

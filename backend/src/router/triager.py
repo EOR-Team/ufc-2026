@@ -255,23 +255,3 @@ async def parse_commands(
             media_type="application/json"
         )
 
-
-origin_route_list = [
-    {
-        "this": "entrance",
-        "next": "registration_center"
-    },
-    {
-        "this": "registration_center",
-        "next": "surgery_clinic"
-    },
-    {
-        "this": "surgery_clinic",
-        "next": "pharmacy"
-    },
-    {
-        "this": "pharmacy",
-        "next": "exit"
-    }
-]
-

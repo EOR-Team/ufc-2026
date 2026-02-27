@@ -43,6 +43,13 @@ const props = defineProps({
     default: false
   },
   /**
+   * 是否正在等待 TTS 就绪（文字已写入但视觉上仍显示骨架屏）
+   */
+  isAwaitingTTS: {
+    type: Boolean,
+    default: false
+  },
+  /**
    * 是否为流式显示消息
    */
   isStreaming: {
@@ -81,7 +88,7 @@ const { name: bubbleName, icon: bubbleIcon, isAssistant } = bubbleConfig.value
 
 // 决定渲染哪个组件
 const shouldRenderSkeleton = computed(() => {
-  return props.isSkeleton
+  return props.isSkeleton || props.isAwaitingTTS
 })
 </script>
 

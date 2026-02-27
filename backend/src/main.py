@@ -33,6 +33,8 @@ async def lifespan(app: FastAPI):
     # === 3. 语音交互预热 ===
     await VoiceInteraction().warmup()
 
+    logger.info("\n\n========== READY. ==========\n\n")
+
     yield 
 
     # Shutdown
