@@ -86,18 +86,38 @@ const shouldRenderSkeleton = computed(() => {
 </script>
 
 <template>
-  <SkeletonMessageBubble
-    v-if="shouldRenderSkeleton"
-    :name="bubbleName"
-    :icon="bubbleIcon"
-    :is-assistant="isAssistant"
-    animation-type="blinking"
-  />
-  <BasicMessageBubble
-    v-else
-    :message="message"
-    :name="bubbleName"
-    :icon="bubbleIcon"
-    :is-assistant="isAssistant"
-  />
+  <div class="message-container">
+    <SkeletonMessageBubble
+      v-if="shouldRenderSkeleton"
+      :name="bubbleName"
+      :icon="bubbleIcon"
+      :is-assistant="isAssistant"
+      animation-type="blinking"
+    />
+    <BasicMessageBubble
+      v-else
+      :message="message"
+      :name="bubbleName"
+      :icon="bubbleIcon"
+      :is-assistant="isAssistant"
+    />
+
+    <!-- 挂载点 -->
+    <div v-if="$slots.hook" class="message-hook-container">
+      <slot name="hook"></slot>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+.message-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.message-hook-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+</style>

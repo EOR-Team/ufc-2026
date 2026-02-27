@@ -204,7 +204,7 @@ export const useApiStore = defineStore('api', () => {
 
   /**
    * Parse route to commands
-   * @param {LocationLink[]} originRoute - Original route
+   * @param {LocationLink[]} originRoute - Original route (优化后的路线)
    * @returns {Promise<ApiResponse>} API response with parsed commands
    */
   const parseCommands = async (originRoute) => {
@@ -215,6 +215,18 @@ export const useApiStore = defineStore('api', () => {
       body: JSON.stringify({
         origin_route: originRoute
       })
+    })
+  }
+
+  /**
+   * Get hospital map data
+   * @returns {Promise<ApiResponse>} API response with map data (nodes and edges)
+   */
+  const getMap = async () => {
+    log('Getting map data')
+
+    return await request('/triager/map/', {
+      method: 'GET'
     })
   }
 
@@ -308,6 +320,7 @@ export const useApiStore = defineStore('api', () => {
     patchRoute,
     getRoutePatch,
     parseCommands,
+    getMap,
     speechToText,
     clearError,
     reset

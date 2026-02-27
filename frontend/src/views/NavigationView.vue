@@ -5,6 +5,7 @@ import FixedAspectContainer from '@/components/FixedAspectContainer.vue'
 import AppTopBar from '@/components/AppTopBar.vue'
 import ConversationList from '@/components/ConversationList.vue'
 import VoiceOverlay from '@/components/VoiceOverlay.vue'
+import MapOverlay from '@/components/map/MapOverlay.vue'
 import AppBottomNav from '@/components/AppBottomNav.vue'
 import { useLongPress } from '@/composables/useLongPress'
 import { useVoiceRecorder } from '@/composables/useVoiceRecorder'
@@ -183,6 +184,21 @@ const handleVoiceInput = async (text) => {
   await workflowStore.processUserInput(input)
 }
 
+// 计算是否显示地图按钮
+const showMapButton = computed(() => {
+  return workflowStore.isCompleted && workflowStore.hasHighlightedMap
+})
+
+// 处理查看地图按钮点击
+const handleViewMap = () => {
+  workflowStore.showMap()
+}
+
+// 处理地图关闭
+const handleMapClose = () => {
+  workflowStore.hideMap()
+}
+
 </script>
 
 <template>
@@ -203,12 +219,23 @@ const handleVoiceInput = async (text) => {
       <div class="relative flex-1 min-h-0">
         <!-- 内容容器 -->
         <div class="overflow-y-auto no-scrollbar" style="height: 400px;">
-          <ConversationList :messages="navigationMessages" />
+          <ConversationList
+            :messages="navigationMessages"
+            :show-map-button="showMapButton"
+            @view-map="handleViewMap"
+          />
         </div>
       </div>
 
 
       <VoiceOverlay :visible="isListening" />
+
+      <!-- 地图 overlay -->
+      <MapOverlay
+        :visible="workflowStore.showMapOverlay"
+        :highlighted-map="workflowStore.highlightedMap"
+        @close="handleMapClose"
+      />
     </div>
 
     <!-- 底部导航栏 + FAB -->

@@ -19,6 +19,7 @@ import {
   validateRouteContinuity,
   formatRouteForDisplay
 } from '@/utils/route.js'
+import { computeHighlights } from '@/utils/mapHighlights.js'
 import {
   BASE_PATH,
   CLINIC_ID_PLACEHOLDER,
@@ -53,6 +54,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const originalRoute = ref(null)
   const modifiedRoute = ref(null)
 
+  // Map visualization data
+  const commands = ref(null)
+  const mapData = ref(null)
+  const highlightedMap = ref(null)
+  const showMapOverlay = ref(false)
+
   // Message history
   const messages = ref([])
 
@@ -75,6 +82,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const hasPatches = computed(() => patches.value !== null && patches.value.patches && patches.value.patches.length > 0)
   const hasOriginalRoute = computed(() => originalRoute.value !== null && originalRoute.value.length > 0)
   const hasModifiedRoute = computed(() => modifiedRoute.value !== null && modifiedRoute.value.length > 0)
+
+  // Map visualization computed properties
+  const hasCommands = computed(() => commands.value !== null)
+  const hasMapData = computed(() => mapData.value !== null)
+  const hasHighlightedMap = computed(() => highlightedMap.value !== null)
 
   const formattedOriginalRoute = computed(() =>
     hasOriginalRoute.value ? formatRouteForDisplay(originalRoute.value) : ''
@@ -110,6 +122,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
     patches.value = null
     originalRoute.value = null
     modifiedRoute.value = null
+    commands.value = null
+    mapData.value = null
+    highlightedMap.value = null
+    showMapOverlay.value = false
 
     messages.value = []
 
@@ -377,6 +393,38 @@ export const useWorkflowStore = defineStore('workflow', () => {
           })
         }
 
+        // 新增步骤：获取地图数据
+        try {
+          const mapResponse = await apiStore.getMap();
+          if (mapResponse.success) {
+            mapData.value = mapResponse.data;
+            console.log('[Workflow] Map data loaded:', mapData.value);
+          } else {
+            console.warn('[Workflow] Failed to load map data:', mapResponse.error);
+          }
+        } catch (mapError) {
+          console.error('[Workflow] Exception loading map data:', mapError);
+        }
+
+        // 新增步骤：解析命令
+        if (mapData.value && modifiedRoute.value) {
+          try {
+            const commandsResponse = await apiStore.parseCommands(modifiedRoute.value);
+            if (commandsResponse.success) {
+              commands.value = commandsResponse.data;
+              console.log('[Workflow] Commands parsed:', commands.value);
+
+              // 计算高亮地图
+              highlightedMap.value = computeHighlights(commands.value, mapData.value);
+              console.log('[Workflow] Highlighted map computed:', highlightedMap.value);
+            } else {
+              console.warn('[Workflow] Failed to parse commands:', commandsResponse.error);
+            }
+          } catch (commandsError) {
+            console.error('[Workflow] Exception parsing commands:', commandsError);
+          }
+        }
+
         // Transition to completed state
         transitionTo(STATE.COMPLETED)
       } else {
@@ -413,6 +461,21 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }, 1000)
   }
 
+  // Map visualization methods
+  const showMap = () => {
+    if (hasHighlightedMap.value) {
+      showMapOverlay.value = true
+      console.log('[Workflow] Showing map overlay')
+    } else {
+      console.warn('[Workflow] Cannot show map: no highlighted map data available')
+    }
+  }
+
+  const hideMap = () => {
+    showMapOverlay.value = false
+    console.log('[Workflow] Hiding map overlay')
+  }
+
   return {
     // State
     STATE,
@@ -425,6 +488,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
     patches,
     originalRoute,
     modifiedRoute,
+    commands,
+    mapData,
+    highlightedMap,
+    showMapOverlay,
     messages,
 
     // Computed
@@ -444,6 +511,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     hasModifiedRoute,
     formattedOriginalRoute,
     formattedModifiedRoute,
+    hasCommands,
+    hasMapData,
+    hasHighlightedMap,
 
     // Methods
     transitionTo,
@@ -459,6 +529,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     autoSelectClinic,
     handleRequirementsInput,
     autoPatchRoute,
-    quickStartDemo
+    quickStartDemo,
+    showMap,
+    hideMap
   }
 })
