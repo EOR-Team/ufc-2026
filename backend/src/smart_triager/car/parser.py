@@ -163,7 +163,7 @@ def parse_route_to_commands(
 
     if len(full_path) < 2:
         # 路径至少需要两个节点
-        return CarCommandsOutput(actions=[], full_path_nodes=full_path)
+        return CarCommandsOutput(actions=[])
 
     # 阶段2：指令生成
 
@@ -214,4 +214,4 @@ def parse_route_to_commands(
     # 5. 清理：移除distance=0的动作（纯转向且无后续移动的情况）
     final_actions = [action for action in merged_actions if action.distance > 0]
 
-    return CarCommandsOutput(actions=final_actions, full_path_nodes=full_path)
+    return CarCommandsOutput(actions=final_actions)

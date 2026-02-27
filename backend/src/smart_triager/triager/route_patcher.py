@@ -8,7 +8,7 @@ import asyncio
 from agents import Agent, ModelSettings, Runner
 
 from src import logger, utils
-from src.llm.online import get_online_reasoning_model
+from src.llm.online import get_online_chat_model
 from src.llm.offline import get_offline_chat_model
 from src.smart_triager.typedef import *
 from src.map import main_node_id_to_name_and_description
@@ -260,7 +260,7 @@ async def patch_route_online(
             "$origin_route_mark$",
             json.dumps([link.model_dump() for link in generate_route(destination_clinic_id)], ensure_ascii=False, indent=4)
         )),
-        model = get_online_reasoning_model(),
+        model = get_online_chat_model(),
         model_settings = ModelSettings(
             temperature = 0.6,
             max_tokens = 4096,

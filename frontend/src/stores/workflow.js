@@ -393,20 +393,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
           })
         }
 
-        // 新增步骤：获取地图数据
-        try {
-          const mapResponse = await apiStore.getMap();
-          if (mapResponse.success) {
-            mapData.value = mapResponse.data;
-            console.log('[Workflow] Map data loaded:', mapData.value);
-          } else {
-            console.warn('[Workflow] Failed to load map data:', mapResponse.error);
-          }
-        } catch (mapError) {
-          console.error('[Workflow] Exception loading map data:', mapError);
-        }
-
-        // 新增步骤：解析命令
+        // 解析命令
         if (mapData.value && modifiedRoute.value) {
           try {
             const commandsResponse = await apiStore.parseCommands(modifiedRoute.value);

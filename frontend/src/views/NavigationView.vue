@@ -50,7 +50,13 @@ const navigationMessages = computed(() => workflowStore.messages)
 
 
 // 初始化工作流
-onMounted(() => {
+onMounted(async () => {
+  // 预加载地图数据
+  const mapResponse = await apiStore.getMap()
+  if (mapResponse.success) {
+    workflowStore.mapData = mapResponse.data
+  }
+
   // 如果工作流处于空闲状态且没有消息，自动开始
   if (workflowStore.isIdle && workflowStore.messages.length === 0) {
     workflowStore.startWorkflow()
