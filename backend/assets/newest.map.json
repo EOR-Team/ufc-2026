@@ -1,0 +1,186 @@
+{
+    "nodes": [
+        {
+            "id": "emergency_clinic",
+            "x": 2,
+            "y": 0,
+            "type": "main",
+            "name": "急诊诊室",
+            "description": "24小时开放，专门用于抢救与处理突发、危重的伤病员，如严重外伤、大出血、休克、急性腹痛等。"
+        },
+        {
+            "id": "crossroad1",
+            "x": 1,
+            "y": 0,
+            "type": "nav"
+        },
+        {
+            "id": "crossroad2",
+            "x": 1,
+            "y": 1,
+            "type": "nav"
+        },
+        {
+            "id": "surgery_clinic",
+            "x": 0,
+            "y": 1,
+            "type": "main",
+            "name": "外科诊室",
+            "description": "处理需手术或操作的外伤、感染、肿瘤等体表及内部疾病，进行术前评估与术后复查。"
+        },
+        {
+            "id": "toilet",
+            "x": 2,
+            "y": 1,
+            "type": "main",
+            "name": "卫生间",
+            "description": "为患者、家属及医护人员提供必要的卫生设施，保障院内基本卫生需求与个人隐私。"
+        },
+        {
+            "id": "crossroad3",
+            "x": 1,
+            "y": 2,
+            "type": "nav"
+        },
+        {
+            "id": "internal_clinic",
+            "x": 0,
+            "y": 2,
+            "type": "main",
+            "name": "内科诊室",
+            "description": "通过问诊、查体及非手术方式（如药物），诊疗人体内部各系统疾病，如心脑血管、呼吸、消化、内分泌等疾病。"
+        },
+        {
+            "id": "payment_center",
+            "x": 2,
+            "y": 2,
+            "type": "main",
+            "name": "缴费处",
+            "description": "处理门急诊、住院等各项医疗费用的收款、结算业务，支持多种支付方式，是医院财务流程的关键环节。"
+        },
+        {
+            "id": "crossroad4",
+            "x": 1,
+            "y": 3,
+            "type": "nav"
+        },
+        {
+            "id": "pediatric_clinic",
+            "x": 0,
+            "y": 3,
+            "type": "main",
+            "name": "儿科诊室",
+            "description": "专门为14周岁以下儿童及青少年提供疾病诊疗、健康检查与生长发育评估，环境与用药剂量均有别于成人。"
+        },
+        {
+            "id": "registration_center",
+            "x": 2,
+            "y": 3,
+            "type": "main",
+            "name": "挂号处",
+            "description": "患者就医第一站，负责登记个人信息、安排就诊科室与医生，并生成病历号，是分流患者、组织诊疗流程的核心。"
+        },
+        {
+            "id": "crossroad5",
+            "x": 1,
+            "y": 4,
+            "type": "nav"
+        },
+        {
+            "id": "quit",
+            "x": 0,
+            "y": 4,
+            "type": "main",
+            "name": "出口",
+            "description": "离开医院的出口。"
+        },
+        {
+            "id": "pharmacy",
+            "x": 2,
+            "y": 4,
+            "type": "main",
+            "name": "药房",
+            "description": "依据医生处方为患者调配、发放药品，并提供用药咨询与指导，确保患者安全、正确地使用药物。"
+        },
+        {
+            "id": "entrance",
+            "x": 1,
+            "y": 5,
+            "type": "main",
+            "name": "入口",
+            "description": "医院主入口。"
+        }
+    ],
+    "edges": [
+        {
+            "u": "entrance",
+            "v": "crossroad5",
+            "name": "医院主干道"
+        },
+        {
+            "u": "crossroad5",
+            "v": "quit",
+            "name": ""
+        },
+        {
+            "u": "crossroad5",
+            "v": "pharmacy",
+            "name": ""
+        },
+        {
+            "u": "crossroad5",
+            "v": "crossroad4",
+            "name": "医院主干道"
+        },
+        {
+            "u": "crossroad4",
+            "v": "pediatric_clinic",
+            "name": ""
+        },
+        {
+            "u": "crossroad4",
+            "v": "registration_center",
+            "name": ""
+        },
+        {
+            "u": "crossroad4",
+            "v": "crossroad3",
+            "name": "医院主干道"
+        },
+        {
+            "u": "crossroad3",
+            "v": "internal_clinic",
+            "name": ""
+        },
+        {
+            "u": "crossroad3",
+            "v": "payment_center",
+            "name": ""
+        },
+        {
+            "u": "crossroad3",
+            "v": "crossroad2",
+            "name": "医院主干道"
+        },
+        {
+            "u": "crossroad2",
+            "v": "surgery_clinic",
+            "name": ""
+        },
+        {
+            "u": "crossroad2",
+            "v": "toilet",
+            "name": ""
+        },
+        {
+            "u": "crossroad2",
+            "v": "crossroad1",
+            "name": "医院主干道"
+        },
+        {
+            "u": "crossroad1",
+            "v": "emergency_clinic",
+            "name": ""
+        }
+    ]
+}
