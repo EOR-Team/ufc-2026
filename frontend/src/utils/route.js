@@ -129,26 +129,25 @@ export function validateRouteContinuity(route) {
 /**
  * Format route for display
  * @param {LocationLink[]} route - Route to format
+ * @param {Object} [nodeNameMap={}] - Optional map of node ID to display name
  * @returns {string} Formatted route string
  */
-export function formatRouteForDisplay(route) {
+export function formatRouteForDisplay(route, nodeNameMap = {}) {
   if (!route || route.length === 0) {
     return 'No route available'
   }
 
+  const name = (id) => nodeNameMap[id] || id
   const steps = []
 
-  // Add starting point
-  steps.push(`从 ${route[0].this} 出发`)
+  steps.push(`从 ${name(route[0].this)} 出发`)
 
-  // Add each step
   for (let i = 0; i < route.length; i++) {
     const link = route[i]
-
     if (i < route.length - 1) {
-      steps.push(`→ 前往 ${link.next}`)
+      steps.push(`→ 前往 ${name(link.next)}`)
     } else {
-      steps.push(`→ 到达终点 ${link.next}`)
+      steps.push(`→ 到达终点 ${name(link.next)}`)
     }
   }
 

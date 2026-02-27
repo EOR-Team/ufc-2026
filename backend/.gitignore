@@ -1,3 +1,6 @@
+*.wav
+log/
+
 # Claude Code
 SCRATCH.md
 TODO.md

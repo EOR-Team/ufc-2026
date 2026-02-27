@@ -4,6 +4,7 @@ from typing import Any, Callable
 from src.IntegratedSystem.integrated_system import IntegratedSystem
 from src.config import general
 from src.llm.online.client import get_online_client
+from src import utils
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -176,12 +177,12 @@ class RecorderAgent:
         return func(**arguments)
 
     def _build_messages(self, query: str, context: dict | None = None) -> list[dict]:
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        messages = [{"role": "system", "content": utils.instruction_token_wrapper(SYSTEM_PROMPT)}]
         if self._messages:
             messages.extend(self._messages)
         if context:
-            messages.append({"role": "user", "content": f"上下文信息: {json.dumps(context, ensure_ascii=False)}"})
-        messages.append({"role": "user", "content": query})
+            messages.append({"role": "user", "content": utils.input_token_wrapper(f"上下文信息: {json.dumps(context, ensure_ascii=False)}")})
+        messages.append({"role": "user", "content": utils.input_token_wrapper(query)})
         return messages
 
     def run(self, query: str, context: dict | None = None, max_iterations: int = 10) -> dict:

@@ -70,3 +70,21 @@ def build_logit_bias(
         return logit_bias_dict
     
     return wrapper
+
+
+def instruction_token_wrapper(origin: str) -> str:
+    """
+    将 **instruction** 用 **LFM2.5** 的格式包装起来
+    """
+
+    return f"<|startoftext|><|im_start|>system\n{origin}\n<|im_end|>"
+    # return origin
+
+
+def input_token_wrapper(origin: str) -> str:
+    """
+    将 **input** 用 **LFM2.5** 的格式包装起来
+    """
+
+    return f"<|im_start|>user{origin}<|im_end|>"
+    # return origin

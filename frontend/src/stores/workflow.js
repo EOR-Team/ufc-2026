@@ -19,6 +19,7 @@ import {
   validateRouteContinuity,
   formatRouteForDisplay
 } from '@/utils/route.js'
+import { computeHighlights } from '@/utils/mapHighlights.js'
 import {
   BASE_PATH,
   CLINIC_ID_PLACEHOLDER,
@@ -53,8 +54,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const originalRoute = ref(null)
   const modifiedRoute = ref(null)
 
+  // Map visualization data
+  const commands = ref(null)
+  const mapData = ref(null)
+  const highlightedMap = ref(null)
+  const showMapOverlay = ref(false)
+
   // Message history
   const messages = ref([])
+
+  // TTS sync: workflow pauses here until NavigationView signals audio is ready
+  let _ttsReadyResolve = null
 
   // API store
   const apiStore = useApiStore()
@@ -76,11 +86,24 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const hasOriginalRoute = computed(() => originalRoute.value !== null && originalRoute.value.length > 0)
   const hasModifiedRoute = computed(() => modifiedRoute.value !== null && modifiedRoute.value.length > 0)
 
+  // Map visualization computed properties
+  const hasCommands = computed(() => commands.value !== null)
+  const hasMapData = computed(() => mapData.value !== null)
+  const hasHighlightedMap = computed(() => highlightedMap.value !== null)
+
+  // Node ID → display name map (nav nodes without names fall back to ID)
+  const nodeNameMap = computed(() => {
+    if (!mapData.value?.nodes) return {}
+    return Object.fromEntries(
+      mapData.value.nodes.filter(n => n.name).map(n => [n.id, n.name])
+    )
+  })
+
   const formattedOriginalRoute = computed(() =>
-    hasOriginalRoute.value ? formatRouteForDisplay(originalRoute.value) : ''
+    hasOriginalRoute.value ? formatRouteForDisplay(originalRoute.value, nodeNameMap.value) : ''
   )
   const formattedModifiedRoute = computed(() =>
-    hasModifiedRoute.value ? formatRouteForDisplay(modifiedRoute.value) : ''
+    hasModifiedRoute.value ? formatRouteForDisplay(modifiedRoute.value, nodeNameMap.value) : ''
   )
 
   // State transition methods
@@ -110,8 +133,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
     patches.value = null
     originalRoute.value = null
     modifiedRoute.value = null
+    commands.value = null
+    highlightedMap.value = null
+    showMapOverlay.value = false
 
     messages.value = []
+
+    if (_ttsReadyResolve) {
+      _ttsReadyResolve()
+      _ttsReadyResolve = null
+    }
 
     console.log('Workflow reset')
   }
@@ -123,7 +154,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
       message,
       timestamp: Date.now(),
       isProcessing: options.isProcessing || false,
-      isError: options.isError || false
+      isError: options.isError || false,
+      isSkeleton: options.isSkeleton || false,
+      isStreaming: options.isStreaming || false,
+      streamingProgress: options.streamingProgress || 0,
+      isAwaitingTTS: options.isAwaitingTTS || false
     }
 
     messages.value.push(messageObj)
@@ -145,6 +180,28 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  // TTS sync helpers
+  const waitForTTS = (timestamp) => {
+    const idx = messages.value.findLastIndex(m => m.timestamp === timestamp)
+    if (idx !== -1) {
+      messages.value[idx] = { ...messages.value[idx], isAwaitingTTS: true }
+    }
+    return new Promise(resolve => {
+      _ttsReadyResolve = resolve
+    })
+  }
+
+  const signalTTSReady = () => {
+    const idx = messages.value.findLastIndex(m => m.isAwaitingTTS)
+    if (idx !== -1) {
+      messages.value[idx] = { ...messages.value[idx], isAwaitingTTS: false }
+    }
+    if (_ttsReadyResolve) {
+      _ttsReadyResolve()
+      _ttsReadyResolve = null
+    }
+  }
+
   // Workflow methods
   const startWorkflow = () => {
     resetWorkflow()
@@ -159,8 +216,20 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return
     }
 
-    // Add user message
-    addUserMessage(userInput)
+    // Check if the last message is a user message with the same content
+    // This prevents duplicate user messages when voice input updates skeleton message
+    const lastMessage = messages.value.length > 0 ? messages.value[messages.value.length - 1] : null
+    const isDuplicateUserMessage = lastMessage &&
+      lastMessage.name === 'user' &&
+      lastMessage.message === userInput &&
+      lastMessage.isSkeleton === false
+
+    // Only add user message if it's not a duplicate
+    if (!isDuplicateUserMessage) {
+      addUserMessage(userInput)
+    } else {
+      console.log('[Workflow] Skipping duplicate user message:', userInput)
+    }
 
     // Process based on current state
     switch (currentState.value) {
@@ -178,11 +247,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const handleConditionsInput = async (userInput) => {
+    console.log('[Workflow] handleConditionsInput called with:', userInput)
     const processingMsg = addAssistantMessage('正在分析你的症状...', { isProcessing: true })
 
     try {
       // Call API to collect conditions
+      console.log('[Workflow] Calling collectConditions API...')
       const response = await apiStore.collectConditions(userInput)
+      console.log('[Workflow] collectConditions API response:', response)
 
       if (response.success && response.data) {
         // Update conditions
@@ -195,10 +267,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
           isProcessing: false
         })
 
+        // Wait for TTS to be ready before auto-advancing
+        await waitForTTS(processingMsg.timestamp)
+
         // Auto-transition to selecting clinic
         await autoSelectClinic()
       } else {
         // API error
+        console.error('[Workflow] collectConditions API error:', response.error)
         updateLastMessage({
           message: `抱歉，分析症状时出现错误：${response.error || '未知错误'}`,
           isProcessing: false,
@@ -208,6 +284,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
         transitionToError(new Error(response.error || 'Failed to collect conditions'))
       }
     } catch (error) {
+      console.error('[Workflow] Exception in handleConditionsInput:', error)
       updateLastMessage({
         message: `处理症状时出现错误：${error.message}`,
         isProcessing: false,
@@ -244,7 +321,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
           // Update message
           updateLastMessage({
-            message: `已为你选择 ${clinicId.value} 诊室。请告诉我你有什么个性化需求（例如：需要轮椅、需要优先就诊等），我将为你优化路线。`,
+            message: `已为你选择 ${nodeNameMap.value[clinicId.value] ?? clinicId.value} 。请告诉我你有什么个性化需求（例如：去看医生前上个洗手间等），我将为你优化路线。`,
             isProcessing: false
           })
 
@@ -291,6 +368,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
           message: `已记录你的${reqCount > 0 ? ` ${reqCount} 项` : ''}需求。现在根据诊室和需求优化路线...`,
           isProcessing: false
         })
+
+        // Wait for TTS to be ready before auto-advancing
+        await waitForTTS(processingMsg.timestamp)
 
         // Auto-transition to patching route
         await autoPatchRoute()
@@ -357,6 +437,25 @@ export const useWorkflowStore = defineStore('workflow', () => {
           })
         }
 
+        // 解析命令
+        if (mapData.value && modifiedRoute.value) {
+          try {
+            const commandsResponse = await apiStore.parseCommands(modifiedRoute.value);
+            if (commandsResponse.success) {
+              commands.value = commandsResponse.data;
+              console.log('[Workflow] Commands parsed:', commands.value);
+
+              // 计算高亮地图
+              highlightedMap.value = computeHighlights(commands.value, mapData.value);
+              console.log('[Workflow] Highlighted map computed:', highlightedMap.value);
+            } else {
+              console.warn('[Workflow] Failed to parse commands:', commandsResponse.error);
+            }
+          } catch (commandsError) {
+            console.error('[Workflow] Exception parsing commands:', commandsError);
+          }
+        }
+
         // Transition to completed state
         transitionTo(STATE.COMPLETED)
       } else {
@@ -393,6 +492,21 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }, 1000)
   }
 
+  // Map visualization methods
+  const showMap = () => {
+    if (hasHighlightedMap.value) {
+      showMapOverlay.value = true
+      console.log('[Workflow] Showing map overlay')
+    } else {
+      console.warn('[Workflow] Cannot show map: no highlighted map data available')
+    }
+  }
+
+  const hideMap = () => {
+    showMapOverlay.value = false
+    console.log('[Workflow] Hiding map overlay')
+  }
+
   return {
     // State
     STATE,
@@ -405,6 +519,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
     patches,
     originalRoute,
     modifiedRoute,
+    commands,
+    mapData,
+    highlightedMap,
+    showMapOverlay,
     messages,
 
     // Computed
@@ -424,6 +542,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     hasModifiedRoute,
     formattedOriginalRoute,
     formattedModifiedRoute,
+    hasCommands,
+    hasMapData,
+    hasHighlightedMap,
 
     // Methods
     transitionTo,
@@ -439,6 +560,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     autoSelectClinic,
     handleRequirementsInput,
     autoPatchRoute,
-    quickStartDemo
+    quickStartDemo,
+    showMap,
+    hideMap,
+    signalTTSReady
   }
 })

@@ -22,6 +22,9 @@ export const useApiStore = defineStore('api', () => {
   const DEFAULT_ONLINE_MODEL = import.meta.env.VITE_DEFAULT_ONLINE_MODEL === 'true' || true
   const ENABLE_LOGGING = import.meta.env.VITE_ENABLE_LOGGING === 'true' || false
 
+  // 在线模型开关（可由设置页面控制）
+  const onlineModelEnabled = ref(DEFAULT_ONLINE_MODEL)
+
   /**
    * Log debug messages if logging is enabled
    */
@@ -46,11 +49,17 @@ export const useApiStore = defineStore('api', () => {
     log(`Making request to: ${url}`, options)
 
     try {
+      // 准备请求头
+      const headers = { ...options.headers }
+
+      // 如果不是 FormData，默认设置 JSON Content-Type
+      // FormData 会自动设置正确的 Content-Type 和 boundary
+      if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json'
+      }
+
       const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers
-        },
+        headers,
         ...options
       })
 
@@ -101,7 +110,7 @@ export const useApiStore = defineStore('api', () => {
    * @param {boolean} [onlineModel] - Whether to use online model
    * @returns {Promise<ApiResponse>} API response with ConditionCollectorOutput
    */
-  const collectConditions = async (userInput, onlineModel = DEFAULT_ONLINE_MODEL) => {
+  const collectConditions = async (userInput, onlineModel = onlineModelEnabled.value) => {
     log('Collecting conditions:', { userInput, onlineModel })
 
     return await request('/triager/collect_conditions/', {
@@ -119,7 +128,7 @@ export const useApiStore = defineStore('api', () => {
    * @param {boolean} [onlineModel] - Whether to use online model
    * @returns {Promise<ApiResponse>} API response with clinic selection
    */
-  const selectClinic = async (conditions, onlineModel = DEFAULT_ONLINE_MODEL) => {
+  const selectClinic = async (conditions, onlineModel = onlineModelEnabled.value) => {
     log('Selecting clinic:', { conditions, onlineModel })
 
     return await request('/triager/select_clinic/', {
@@ -137,7 +146,7 @@ export const useApiStore = defineStore('api', () => {
    * @param {boolean} [onlineModel] - Whether to use online model
    * @returns {Promise<ApiResponse>} API response with requirements list
    */
-  const collectRequirement = async (userInput, onlineModel = DEFAULT_ONLINE_MODEL) => {
+  const collectRequirement = async (userInput, onlineModel = onlineModelEnabled.value) => {
     log('Collecting requirements:', { userInput, onlineModel })
 
     return await request('/triager/collect_requirement/', {
@@ -161,7 +170,7 @@ export const useApiStore = defineStore('api', () => {
     destinationClinicId,
     requirementSummary,
     originRoute,
-    onlineModel = DEFAULT_ONLINE_MODEL
+    onlineModel = onlineModelEnabled.value
   ) => {
     log('Patching route:', { destinationClinicId, requirementSummary, originRoute, onlineModel })
 
@@ -183,7 +192,7 @@ export const useApiStore = defineStore('api', () => {
    * @param {boolean} [onlineModel] - Whether to use online model
    * @returns {Promise<ApiResponse>} API response with complete route patch
    */
-  const getRoutePatch = async (userInput, originRoute, onlineModel = DEFAULT_ONLINE_MODEL) => {
+  const getRoutePatch = async (userInput, originRoute, onlineModel = onlineModelEnabled.value) => {
     log('Getting route patch:', { userInput, originRoute, onlineModel })
 
     return await request('/triager/get_route_patch/', {
@@ -198,7 +207,7 @@ export const useApiStore = defineStore('api', () => {
 
   /**
    * Parse route to commands
-   * @param {LocationLink[]} originRoute - Original route
+   * @param {LocationLink[]} originRoute - Original route (优化后的路线)
    * @returns {Promise<ApiResponse>} API response with parsed commands
    */
   const parseCommands = async (originRoute) => {
@@ -210,6 +219,92 @@ export const useApiStore = defineStore('api', () => {
         origin_route: originRoute
       })
     })
+  }
+
+  /**
+   * Get hospital map data
+   * @returns {Promise<ApiResponse>} API response with map data (nodes and edges)
+   */
+  const getMap = async () => {
+    log('Getting map data')
+
+    return await request('/map/', {
+      method: 'GET'
+    })
+  }
+
+  /**
+   * Convert speech to text using backend STT API
+   * @param {Blob} audioBlob - Audio blob from voice recording
+   * @returns {Promise<ApiResponse>} API response with recognized text
+   */
+  const speechToText = async (audioBlob) => {
+    log('Converting speech to text:', {
+      size: audioBlob.size,
+      type: audioBlob.type
+    })
+
+    // 创建 FormData 并添加音频文件
+    const formData = new FormData()
+    formData.append('file', audioBlob, 'audio.wav')
+
+    // 调用基础 request 方法
+    const response = await request('/voice/stt/', {
+      method: 'POST',
+      body: formData
+      // 注意：FormData 会自动设置正确的 Content-Type
+      // 我们修改的 request 方法会检测到 FormData 并不设置默认的 JSON Content-Type
+    })
+
+    log('STT API raw response:', response)
+
+    // 处理不同的响应格式
+    // 格式1: {text: "recognized text"} (旧格式)
+    // 格式2: {success: true, data: {text: "recognized text"}} (标准格式)
+
+    if (response.success === true && response.data && response.data.text) {
+      // 已经是标准格式，直接返回
+      log('STT response in standard format')
+      return response
+    } else if (response.text) {
+      // 旧格式：{text: "recognized text"}
+      log('STT response in legacy format, converting to standard format')
+      return {
+        success: true,
+        data: {
+          text: response.text
+        }
+      }
+    } else if (response.success === false) {
+      // 已经是错误格式
+      log('STT response indicates failure')
+      return response
+    } else {
+      // 未知格式
+      log('STT response in unknown format')
+      return {
+        success: false,
+        error: 'Unknown response format from STT API'
+      }
+    }
+  }
+
+  /**
+   * Convert text to speech using backend TTS API
+   * @param {string} text - Text to synthesize
+   * @returns {Promise<Blob|null>} WAV audio Blob, or null on failure
+   */
+  const tts = async (text) => {
+    const url = `${BASE_URL}/voice/tts?text=${encodeURIComponent(text)}`
+    log('TTS request:', text)
+    try {
+      const response = await fetch(url)
+      if (!response.ok) throw new Error(`TTS HTTP ${response.status}`)
+      return await response.blob()
+    } catch (err) {
+      log('TTS failed:', err.message)
+      return null
+    }
   }
 
   /**
@@ -237,6 +332,7 @@ export const useApiStore = defineStore('api', () => {
     // Configuration
     BASE_URL,
     DEFAULT_ONLINE_MODEL,
+    onlineModelEnabled,
 
     // Methods
     request,
@@ -246,6 +342,9 @@ export const useApiStore = defineStore('api', () => {
     patchRoute,
     getRoutePatch,
     parseCommands,
+    getMap,
+    speechToText,
+    tts,
     clearError,
     reset
   }

@@ -8,7 +8,7 @@ import asyncio
 from agents import Agent, ModelSettings, Runner
 
 from src import logger, utils
-from src.llm.online import get_online_reasoning_model
+from src.llm.online import get_online_chat_model
 from src.llm.offline import get_offline_chat_model
 from src.smart_triager.typedef import *
 from src.map import main_node_id_to_name_and_description
@@ -256,11 +256,11 @@ async def patch_route_online(
 
     agent = Agent(
         name = "Route Patcher Agent in Hospital Route Planner",
-        instructions = route_patcher_instructions.replace(
+        instructions = utils.instruction_token_wrapper(route_patcher_instructions.replace(
             "$origin_route_mark$",
             json.dumps([link.model_dump() for link in generate_route(destination_clinic_id)], ensure_ascii=False, indent=4)
-        ),
-        model = get_online_reasoning_model(),
+        )),
+        model = get_online_chat_model(),
         model_settings = ModelSettings(
             temperature = 0.6,
             max_tokens = 4096,
@@ -269,7 +269,7 @@ async def patch_route_online(
 
     response = await Runner().run(
         starting_agent = agent,
-        input = "Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) ),
+        input = utils.input_token_wrapper("Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) )),
         max_turns = 1 # idk whether the agent will ask multiple rounds of questions
     )
 
@@ -304,19 +304,21 @@ async def patch_route_offline(
 
     model = get_offline_chat_model()
 
-    get_response_func = lambda: model.create_chat_completion(
-        messages = [
-            {"role": "system", "content": route_patcher_instructions.replace(
-                "$origin_route_mark$",
-                json.dumps([link.model_dump() for link in generate_route(destination_clinic_id)], ensure_ascii=False, indent=4)
-            )},
-            {"role": "user", "content": "Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) )}
-        ],
-        response_format = {"type": "text"},
-        temperature = 0.6,
-        max_tokens = 1024,
-        logit_bias = _logit_bias()
-    )
+    def get_response_func():
+        model.reset()
+        return model.create_chat_completion(
+            messages = [
+                {"role": "system", "content": utils.instruction_token_wrapper(route_patcher_instructions.replace(
+                    "$origin_route_mark$",
+                    json.dumps([link.model_dump() for link in generate_route(destination_clinic_id)], ensure_ascii=False, indent=4)
+                ))},
+                {"role": "user", "content": utils.input_token_wrapper("Input: {}".format( _transform_input_to_text(destination_clinic_id, requirement_summary, origin_route) ))}
+            ],
+            response_format = {"type": "text"},
+            temperature = 0.6,
+            max_tokens = 1024,
+            logit_bias = _logit_bias()
+        )
 
     response = await asyncio.to_thread(get_response_func)
     response_text = str(response["choices"][0]["message"]["content"])

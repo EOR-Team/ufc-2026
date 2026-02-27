@@ -10,9 +10,15 @@
  *   press-end   — 用户松开或移出 FAB 时触发
  */
 import { useRouter, useRoute } from 'vue-router'
+import { ref } from 'vue'
 
 const router = useRouter()
 const route = useRoute()
+
+// 触摸移动检测
+const touchStartY = ref(0)
+const TOUCH_MOVE_THRESHOLD = 30 // 像素（增加阈值，避免轻微移动取消长按）
+
 
 const props = defineProps({
   isListening: {
@@ -23,8 +29,39 @@ const props = defineProps({
 
 const emit = defineEmits(['press-start', 'press-end'])
 
-const onPressStart = () => emit('press-start')
-const onPressEnd = () => emit('press-end')
+const onPressStart = () => {
+  emit('press-start')
+}
+const onPressEnd = () => {
+  // 重置触摸起始位置
+  touchStartY.value = 0
+  emit('press-end')
+}
+
+/** 触摸开始处理 */
+const onTouchStart = (e) => {
+  // 阻止默认行为，避免滚动干扰长按
+  e.preventDefault()
+  // 记录起始位置
+  if (e.touches && e.touches.length > 0) {
+    touchStartY.value = e.touches[0].clientY
+  }
+  onPressStart()
+}
+
+/** 触摸移动处理 */
+const onTouchMove = (e) => {
+  const currentY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : 0
+
+  if (!touchStartY.value || !e.touches || e.touches.length === 0) return
+
+  const deltaY = Math.abs(currentY - touchStartY.value)
+
+  // 如果垂直移动超过阈值，可以取消长按（当前禁用）
+  if (deltaY > TOUCH_MOVE_THRESHOLD) {
+    // 可以在这里取消长按：onPressEnd()
+  }
+}
 
 /** 阻止短按 click 事件干扰长按逻辑 */
 const preventClick = (e) => e.preventDefault()
@@ -54,12 +91,12 @@ const preventClick = (e) => e.preventDefault()
       <div class="absolute -top-16">
         <button
           class="relative flex flex-col items-center justify-center w-20 h-20 rounded-full text-white shadow-[0_8px_20px_rgba(0,0,0,0.35)] active:scale-95 z-10 border-4 border-white bg-primary hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
-          style="border-radius: 9999px;"
+          style="border-radius: 9999px; touch-action: none;"
           @mousedown="onPressStart"
-          @touchstart="onPressStart"
+          @touchstart="onTouchStart"
           @mouseup="onPressEnd"
           @touchend="onPressEnd"
-          @mouseleave="onPressEnd"
+          @touchmove="onTouchMove"
           @click="preventClick"
           :class="{
             'scale-95 bg-primary/90 !shadow-[0_16px_32px_rgba(0,0,0,0.55)]': isListening

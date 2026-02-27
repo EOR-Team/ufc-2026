@@ -16,6 +16,9 @@ class TextToSpeech:
 
     def generate(self, text, output="output.wav"):
         path = os.path.join(self.output_path, output)
+        # MeloTTS 中文 G2P 不支持 ASCII 字母和下划线，统一移除后清理多余空格
+        text = re.sub(r'[a-zA-Z_]+', '', text)
+        text = re.sub(r' +', ' ', text).strip()
         self._model.tts_to_file(text, speaker_id=0, output_path=path)
         return path
 

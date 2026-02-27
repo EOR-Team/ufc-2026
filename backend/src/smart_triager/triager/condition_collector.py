@@ -155,7 +155,7 @@ async def collect_conditions_online(user_input: str) -> ConditionCollectorOutput
 
     agent = Agent(
         name = "Patient Information Collector Agent in Hospital Route Planner",
-        instructions = condition_collector_instructions,
+        instructions = utils.instruction_token_wrapper(condition_collector_instructions),
         model = get_online_chat_model(),
         model_settings = ModelSettings(
             temperature = 0.6,
@@ -165,7 +165,7 @@ async def collect_conditions_online(user_input: str) -> ConditionCollectorOutput
 
     response = await Runner().run(
         starting_agent = agent,
-        input = "Input: {}".format(user_input),
+        input = utils.input_token_wrapper("Input: {}".format(user_input)),
         max_turns = 1 # idk whether the agent will ask multiple rounds of questions
     )
 
@@ -200,16 +200,18 @@ async def collect_conditions_offline(user_input: str) -> ConditionCollectorOutpu
 
     offline_chat_model = get_offline_chat_model()
 
-    get_response_func = lambda: offline_chat_model.create_chat_completion(
-        messages = [
-            {"role": "system", "content": condition_collector_instructions},
-            {"role": "user", "content": "Input: {}".format(user_input)}
-        ],
-        response_format = {"type": "text"},
-        temperature = 0.72,
-        max_tokens = 1024,
-        logit_bias = _logit_bias()
-    )
+    def get_response_func():
+        offline_chat_model.reset()
+        return offline_chat_model.create_chat_completion(
+            messages = [
+                {"role": "system", "content": utils.instruction_token_wrapper(condition_collector_instructions)},
+                {"role": "user", "content": utils.input_token_wrapper("Input: {}".format(user_input))}
+            ],
+            response_format = {"type": "text"},
+            temperature = 0.72,
+            max_tokens = 1024,
+            logit_bias = _logit_bias()
+        )
 
     response = await asyncio.to_thread(get_response_func) 
     response_text = str(response["choices"][0]["message"]["content"]) # this type can be ignored

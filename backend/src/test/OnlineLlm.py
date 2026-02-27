@@ -7,11 +7,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))  # backend目录
 import asyncio
 from llm.online.model import online_chat_model
+from src import utils
 class OnlineAgent:
     def __init__(self,name = "",instructions = ""):
         self.agent = Agent(
             name = name,
-            instructions = instructions,
+            instructions = utils.instruction_token_wrapper(instructions),
             model = online_chat_model,
             tools = [],
         )
@@ -29,7 +30,7 @@ class OnlineAgent:
                 if isinstance(user_input, str) and user_input.strip() == "exit()":
                     return ("user_exit", None)
 
-                self.messages.append({"role": "user", "content": user_input})
+                self.messages.append({"role": "user", "content": utils.input_token_wrapper(user_input)})
 
                 result = await Runner().run(self.agent, self.messages)
 

@@ -28,7 +28,7 @@ def _build_online_reasoning_model():
     )
 
 
-def get_online_reasoning_model() -> OpenAIChatCompletionsModel:
+def get_online_chat_model() -> OpenAIChatCompletionsModel:
     """获取在线推理模型实例"""
 
     global online_reasoning_model
@@ -40,5 +40,5 @@ def get_online_reasoning_model() -> OpenAIChatCompletionsModel:
 
 
 __all__ = [
-    "get_online_reasoning_model",
+    "get_online_chat_model",
 ]    
