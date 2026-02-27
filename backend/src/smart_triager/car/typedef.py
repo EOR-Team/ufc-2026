@@ -39,3 +39,7 @@ class CarCommandsOutput(BaseModel):
         ...,
         description="小车动作序列，按顺序执行"
     )
+    full_path_nodes: list[str] = Field(
+        ...,
+        description="完整的路线节点ID序列（包含main与nav节点），用于前端全景展示"
+    )
