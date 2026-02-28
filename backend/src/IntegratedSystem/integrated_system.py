@@ -1,5 +1,5 @@
-from face_recognition_system import FaceRecognitionSystem
-from medical_record_system import MedicalRecordSystem
+from .face_recognition_system import FaceRecognitionSystem
+from .medical_record_system import MedicalRecordSystem
 class IntegratedSystem:
     """集成人脸识别和病历管理的系统"""
     
