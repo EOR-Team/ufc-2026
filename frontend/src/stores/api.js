@@ -19,7 +19,7 @@ export const useApiStore = defineStore('api', () => {
 
   // Configuration
   const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
-  const DEFAULT_ONLINE_MODEL = import.meta.env.VITE_DEFAULT_ONLINE_MODEL === 'true' || true
+  const DEFAULT_ONLINE_MODEL = false
   const ENABLE_LOGGING = import.meta.env.VITE_ENABLE_LOGGING === 'true' || false
 
   // 在线模型开关（可由设置页面控制）
@@ -29,9 +29,7 @@ export const useApiStore = defineStore('api', () => {
    * Log debug messages if logging is enabled
    */
   const log = (...args) => {
-    if (ENABLE_LOGGING) {
-      console.log('[API Store]', ...args)
-    }
+    console.log('[API Store]', ...args)
   }
 
   /**

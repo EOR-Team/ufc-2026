@@ -17,6 +17,7 @@ from src.smart_triager.triager.workflow import (
 )
 from src.map.tools import map
 from src.smart_triager.car.parser import parse_route_to_commands
+from src import logger
 
 
 triager_router = APIRouter(prefix="/triager")
@@ -93,7 +94,8 @@ async def get_route_patch(
     origin_route = request.origin_route
     online_model = request.online_model
 
-    # 调用工作流函数 获取路线修改方案
+    logger.info(f"[get_route_patch] user_input={user_input!r}, online_model={online_model}")
+
     rsp = await modify_route_workflow(user_input, origin_route, online_model)
 
     if rsp:
@@ -123,6 +125,8 @@ async def collect_conditions(
     user_input = request.user_input
     online_model = request.online_model
 
+    logger.info(f"[collect_conditions] user_input={user_input!r}, online_model={online_model}")
+
     rsp = await collect_conditions_workflow(user_input, online_model)
 
     if rsp:
@@ -150,6 +154,8 @@ async def select_clinic(
     conditions = request.conditions
     online_model = request.online_model
 
+    logger.info(f"[select_clinic] conditions={conditions.model_dump()}, online_model={online_model}")
+
     rsp = await select_clinic_workflow(conditions, online_model)
 
     if rsp:
@@ -176,6 +182,8 @@ async def collect_requirement(
 
     user_input = request.user_input
     online_model = request.online_model
+
+    logger.info(f"[collect_requirement] user_input={user_input!r}, online_model={online_model}")
 
     rsp = await collect_requirement_workflow(user_input, online_model)
 
@@ -206,6 +214,8 @@ async def patch_route(
     origin_route = request.origin_route
     online_model = request.online_model
 
+    logger.info(f"[patch_route] destination={destination_clinic_id!r}, requirements={[r.model_dump() for r in requirement_summary]}, online_model={online_model}")
+
     rsp = await patch_route_workflow(destination_clinic_id, requirement_summary, origin_route, online_model)
 
     if rsp:
@@ -230,6 +240,8 @@ async def parse_commands(
     将路线转换为小车移动指令
     """
     origin_route = request.origin_route
+
+    logger.info(f"[parse_commands] origin_route={[r.model_dump() for r in origin_route]}")
 
     try:
         # 调用路径解析器

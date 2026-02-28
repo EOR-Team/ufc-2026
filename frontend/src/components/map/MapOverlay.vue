@@ -68,7 +68,7 @@ const props = defineProps({
   },
   highlightedMap: {
     type: Object,
-    required: true
+    default: null
   }
 });
 
