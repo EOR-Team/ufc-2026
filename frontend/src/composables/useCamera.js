@@ -197,6 +197,10 @@ export function useCamera() {
         videoRef.value.srcObject = stream
         await videoRef.value.play()
       }
+
+      stream.getTracks().forEach(track => {
+        track.onended = () => { if (hasPermission.value) start() }
+      })
     } catch (e) {
       handleCameraError(e)
       stop()

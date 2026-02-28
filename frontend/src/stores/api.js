@@ -305,6 +305,21 @@ export const useApiStore = defineStore('api', () => {
     }
   }
 
+  const uploadFaceImg = async (imageBlob) => {
+    const formData = new FormData()
+    formData.append('file', imageBlob, 'face.jpg')
+    return await request('/medical/upload_face_img', { method: 'POST', body: formData })
+  }
+
+  const recognize = async () =>
+    await request('/medical/recognize', { method: 'POST' })
+
+  const enroll = async (name) =>
+    await request('/medical/enroll', { method: 'POST', body: JSON.stringify({ name }) })
+
+  const getPatient = async (patientId) =>
+    await request(`/medical/patient/${patientId}`, { method: 'GET' })
+
   /**
    * Clear error state
    */
@@ -343,6 +358,10 @@ export const useApiStore = defineStore('api', () => {
     getMap,
     speechToText,
     tts,
+    uploadFaceImg,
+    recognize,
+    enroll,
+    getPatient,
     clearError,
     reset
   }

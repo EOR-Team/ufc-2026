@@ -65,9 +65,7 @@
             }"
             :disabled="isCheckingPermission"
           >
-            <span class="material-symbols-outlined text-white text-2xl">
-              {{ permissionState === 'denied' ? 'warning' : 'videocam' }}
-            </span>
+            <span class="material-symbols-outlined text-primary text-4xl">videocam</span>
           </button>
         </div>
 
@@ -104,6 +102,24 @@
         <span class="text-xs text-slate-500 font-medium tracking-wide uppercase">AI 安全加密保护</span>
       </div>
     </footer>
+    <div v-if="showNameDialog" class="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-2xl p-6 mx-6 w-full shadow-xl">
+        <p class="text-slate-900 font-bold text-lg mb-1">首次登录</p>
+        <p class="text-slate-500 text-sm mb-4">未找到您的信息，请输入姓名完成注册</p>
+        <input
+          v-model="patientName"
+          type="text"
+          placeholder="请输入姓名"
+          class="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-900 mb-4 outline-none focus:border-primary"
+          @keyup.enter="handleEnroll"
+        />
+        <button
+          @click="handleEnroll"
+          :disabled="!patientName.trim()"
+          class="w-full bg-primary text-white font-bold py-3 rounded-xl disabled:opacity-50"
+        >确认注册</button>
+      </div>
+    </div>
   </FixedAspectContainer>
 </template>
 
@@ -112,9 +128,15 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import FixedAspectContainer from '@/components/FixedAspectContainer.vue'
 import { useCamera } from '@/composables/useCamera'
+import { useApiStore } from '@/stores/api.js'
+import { usePatientStore } from '@/stores/patient.js'
 
 const router = useRouter()
 const isLoggingIn = ref(false)
+const apiStore = useApiStore()
+const patientStore = usePatientStore()
+const showNameDialog = ref(false)
+const patientName = ref('')
 
 const { videoRef, cameraCount, error, start, permissionState, requestPermission, queryCameraPermission, setupPermissionListener } = useCamera()
 const isCheckingPermission = ref(false)
@@ -181,22 +203,49 @@ const showPermissionDeniedAlert = () => {
   alert(message)
 }
 
+const captureFrame = () => new Promise((resolve) => {
+  const video = videoRef.value
+  if (!video || !video.videoWidth) return resolve(null)
+  const canvas = document.createElement('canvas')
+  canvas.width = video.videoWidth
+  canvas.height = video.videoHeight
+  canvas.getContext('2d').drawImage(video, 0, 0)
+  canvas.toBlob(resolve, 'image/jpeg', 0.9)
+})
+
 const handleFaceLogin = async () => {
   if (isLoggingIn.value) return
-  
   isLoggingIn.value = true
-  
   try {
-    // 模拟人脸识别过程
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // 登录成功后跳转到智能寻路页面
-    router.push({ name: 'navigation' })
-  } catch (error) {
-    console.error('登录失败:', error)
-    // 这里可以添加错误处理逻辑
+    const frame = await captureFrame()
+    if (!frame) return
+    await apiStore.uploadFaceImg(frame)
+    const result = await apiStore.recognize()
+    if (result.success) {
+      const patientResult = await apiStore.getPatient(result.data.id)
+      patientStore.setPatient(patientResult.success ? patientResult.data : result.data)
+      router.push({ name: 'navigation' })
+    } else {
+      showNameDialog.value = true
+    }
   } finally {
     isLoggingIn.value = false
+  }
+}
+
+const handleEnroll = async () => {
+  if (!patientName.value.trim()) return
+  isLoggingIn.value = true
+  showNameDialog.value = false
+  try {
+    const result = await apiStore.enroll(patientName.value.trim())
+    if (result.success) {
+      patientStore.setPatient({ ...result.data, medical_records: [] })
+      router.push({ name: 'navigation' })
+    }
+  } finally {
+    isLoggingIn.value = false
+    patientName.value = ''
   }
 }
 </script>

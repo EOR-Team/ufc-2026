@@ -167,6 +167,7 @@ ufc-2026/
 - **Face recognition failures**: Ensure `backend/assets/face/face.png` exists and is a valid image.
 - **Frontend build errors**: Ensure using Node.js 18+ and npm 9+. Clean `node_modules` and reinstall if needed.
 - **LLM concurrency errors**: Do not make concurrent calls to the same llama-cpp-python `Llama` instance. Use sequential calls or separate instances.
+- **Mobile blank page (nginx HTTPS proxy)**: Self-signed certificates are not fully trusted on mobile browsers after clicking "proceed". The HTML loads but JS subresources (`<script type="module">`) and `wss://` WebSocket connections are silently blocked → Vue never mounts → blank white page. Fix: install the self-signed cert as a trusted Root CA on the mobile device (Android: Settings → Security → Install CA cert; iOS: install profile then enable in Settings → General → About → Certificate Trust Settings).
 
 ## Quick Reference
 

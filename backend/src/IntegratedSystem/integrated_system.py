@@ -5,8 +5,17 @@ IntegratedSystem/integrated_system.py
 
 import asyncio
 
-from face_recognition_system import FaceRecognitionSystem
-from medical_record_system import MedicalRecordSystem
+from src.IntegratedSystem.face_recognition_system import FaceRecognitionSystem
+from src.IntegratedSystem.medical_record_system import MedicalRecordSystem
+
+
+class SingletonMeta(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
 
 
 class IntegratedSystem:
@@ -17,7 +26,7 @@ class IntegratedSystem:
         self.medical_system = MedicalRecordSystem()
     
 
-    def enroll_new_patient(self, name, image_path: str | None = None):
+    def enroll_new_patient(self, name: str, image_path: str | None = None) -> dict | None:
         """
         录入新患者（从静态图片录入人脸并创建病历）
         - 默认使用 `backend/assets/face/face.png`，也可通过 `image_path` 指定图片
@@ -36,7 +45,7 @@ class IntegratedSystem:
         return None
     
 
-    def recognize_patient(self, image_path: str | None = None):
+    def recognize_patient(self, image_path: str | None = None) -> dict | None:
         """
         从静态图片识别患者（默认使用 `backend/assets/face/face.png`）
         :param image_path: 可选自定义图片路径
@@ -45,7 +54,7 @@ class IntegratedSystem:
         return self.face_system.recognize_face_realtime(image_path)
     
 
-    def add_medical_record(self, patient_id, medical_record):
+    def add_medical_record(self, patient_id: int, medical_record: str) -> bool:
         """
         为患者添加病历
         :param patient_id: 患者ID
@@ -55,7 +64,7 @@ class IntegratedSystem:
         return self.medical_system.append_record(patient_id, medical_record)
     
 
-    def get_patient_info(self, patient_id):
+    def get_patient_info(self, patient_id: int) -> dict | None:
         """
         获取患者完整信息
         :param patient_id: 患者ID
@@ -64,7 +73,7 @@ class IntegratedSystem:
         return self.medical_system.read(patient_id)
     
 
-    def delete_patient(self, patient_id):
+    def delete_patient(self, patient_id: int) -> bool:
         """
         删除患者（同时删除人脸和病历）
         :param patient_id: 患者ID
@@ -75,7 +84,7 @@ class IntegratedSystem:
         return face_deleted and medical_deleted
 
 
-class AsyncIntegratedSystem(IntegratedSystem):
+class AsyncIntegratedSystem(IntegratedSystem, metaclass=SingletonMeta):
     """
     将CPU密集型的面部识别和IO密集型的病历管理操作异步化，以提高性能。
     """
@@ -84,23 +93,23 @@ class AsyncIntegratedSystem(IntegratedSystem):
         super().__init__()
     
 
-    async def enroll_new_patient_async(self, name, image_path: str | None = None):
+    async def enroll_new_patient_async(self, name: str, image_path: str | None = None) -> dict | None:
         return await asyncio.to_thread(self.enroll_new_patient, name, image_path)
     
 
-    async def recognize_patient_async(self, image_path: str | None = None):
+    async def recognize_patient_async(self, image_path: str | None = None) -> dict | None:
         return await asyncio.to_thread(self.recognize_patient, image_path)
     
 
-    async def add_medical_record_async(self, patient_id, medical_record):
+    async def add_medical_record_async(self, patient_id: int, medical_record: str) -> bool:
         return await asyncio.to_thread(self.add_medical_record, patient_id, medical_record)
     
 
-    async def get_patient_info_async(self, patient_id):
+    async def get_patient_info_async(self, patient_id: int) -> dict | None:
         return await asyncio.to_thread(self.get_patient_info, patient_id)
     
 
-    async def delete_patient_async(self, patient_id):
+    async def delete_patient_async(self, patient_id: int) -> bool:
         return await asyncio.to_thread(self.delete_patient, patient_id)
 
 

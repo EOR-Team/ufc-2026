@@ -7,6 +7,8 @@ import os
 os.environ["QT_QPA_PLATFORM"] = "xcb"
 os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"
 
+from typing import Any
+
 import cv2
 import face_recognition
 import pickle
@@ -18,7 +20,7 @@ from src.config.general import BACKEND_ROOT_DIR
 
 class FaceRecognitionSystem:
 
-    def __init__(self, data_file="face_data.pkl"):
+    def __init__(self, data_file: str = "face_data.pkl") -> None:
         """初始化人脸识别系统"""
         self.data_file = data_file
         self.known_encodings = []
@@ -26,7 +28,7 @@ class FaceRecognitionSystem:
         self._load_data()
     
 
-    def _load_data(self):
+    def _load_data(self) -> None:
         """加载已录入的人脸数据"""
         if Path(self.data_file).exists():
             with open(self.data_file, 'rb') as f:
@@ -35,7 +37,7 @@ class FaceRecognitionSystem:
                 self.known_names = data.get('names', [])
     
 
-    def _append_data(self, encoding, name, patient_id):
+    def _append_data(self, encoding: Any, name: str, patient_id: int) -> None:
         """追加新人脸数据到文件末尾"""
         # 重新加载以获取最新数据
         self._load_data()
@@ -50,7 +52,7 @@ class FaceRecognitionSystem:
             }, f)
     
 
-    def _get_next_id(self):
+    def _get_next_id(self) -> int:
         """获取下一个可用的ID"""
         if not self.known_names:
             return 1
@@ -59,7 +61,7 @@ class FaceRecognitionSystem:
         return max(existing_ids) + 1
     
 
-    def enroll_face_realtime(self, name, image_path: str | None = None):
+    def enroll_face_realtime(self, name: str, image_path: str | None = None) -> dict | None:
         """
         从静态图片录入人脸：读取后端仓库中的图片进行识别并录入。
         - 默认图片位置：backend/assets/face/face.png
@@ -98,14 +100,14 @@ class FaceRecognitionSystem:
             print("人脸录入失败：无法计算人脸特征")
             return None
 
-        patient_id = self._get_next_id():
+        patient_id = self._get_next_id()
         self._append_data(face_encodings[0], name, patient_id)
         result = {"name": name, "id": patient_id}
         print(f"成功录入：{name}，ID：{patient_id}")
         return result
     
 
-    def recognize_face_realtime(self, image_path: str | None = None):
+    def recognize_face_realtime(self, image_path: str | None = None) -> dict | None:
         """
         从静态图片识别人脸并返回标签：读取 backend/assets/face/face.png（默认）
         - 若图片中检测到多张人脸，将返回第一个匹配到的已录入人脸
@@ -143,7 +145,7 @@ class FaceRecognitionSystem:
         return None
     
 
-    def delete(self, patient_id):
+    def delete(self, patient_id: int) -> bool:
         """
         删除指定ID的人脸数据
         :param patient_id: 要删除的患者ID

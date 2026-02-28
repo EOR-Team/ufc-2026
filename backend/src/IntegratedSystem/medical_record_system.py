@@ -14,18 +14,18 @@ class MedicalRecordSystem:
         self.patients = []
         self._load_data()
     
-    def _load_data(self):
+    def _load_data(self) -> None:
         """加载病历数据"""
         if Path(self.data_file).exists():
             with open(self.data_file, 'r', encoding='utf-8') as f:
                 self.patients = json.load(f)
     
-    def _save_data(self):
+    def _save_data(self) -> None:
         """保存病历数据"""
         with open(self.data_file, 'w', encoding='utf-8') as f:
             json.dump(self.patients, f, ensure_ascii=False, indent=2)
     
-    def create_patient(self, name, patient_id):
+    def create_patient(self, name: str, patient_id: int) -> bool:
         """
         新建患者（通常在人脸录入后调用）
         :param name: 患者姓名
@@ -53,7 +53,7 @@ class MedicalRecordSystem:
         print(f"成功创建患者：{name}，ID：{patient_id}")
         return True
     
-    def append_record(self, patient_id, medical_record):
+    def append_record(self, patient_id: int, medical_record: str) -> bool:
         """
         追加病历
         :param patient_id: 患者ID
@@ -74,7 +74,7 @@ class MedicalRecordSystem:
         print(f"未找到ID为 {patient_id} 的患者")
         return False
     
-    def read(self, patient_id):
+    def read(self, patient_id: int) -> dict | None:
         """
         读取患者信息
         :param patient_id: 患者ID
@@ -90,7 +90,7 @@ class MedicalRecordSystem:
         print(f"未找到ID为 {patient_id} 的患者")
         return None
     
-    def delete(self, patient_id):
+    def delete(self, patient_id: int) -> bool:
         """
         删除患者信息
         :param patient_id: 患者ID
