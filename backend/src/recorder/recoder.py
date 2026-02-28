@@ -9,7 +9,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = get_online_client()
+try:
+    client = get_online_client()
+except Exception:
+    client = None
+
 system = IntegratedSystem()
 
 
@@ -143,6 +147,81 @@ FUNCTION_MAP: dict[str, Callable] = {
     "delete_patient": delete_patient,
 }
 
+
+def search_medical_records(query: str | None = None, patient_id: int | None = None) -> list[dict]:
+    """
+    在病历库中查找匹配记录（简单子串匹配）。
+    :param query: 要匹配的关键词，若为 None 则返回所有记录
+    :param patient_id: 可选指定患者 ID
+    :return: 匹配的记录列表，每项包含 patient_id 和 record
+    """
+    matches: list[dict] = []
+    try:
+        data_file = system.medical_system.data_file
+        with open(data_file, "r", encoding="utf-8") as f:
+            patients = json.load(f)
+
+        if patient_id is not None:
+            for p in patients:
+                if p.get("id") == int(patient_id):
+                    for r in p.get("medical_records", []):
+                        if not query or (query and query in r):
+                            matches.append({"patient_id": p.get("id"), "record": r})
+                    break
+        else:
+            for p in patients:
+                for r in p.get("medical_records", []):
+                    if not query or (query and query in r):
+                        matches.append({"patient_id": p.get("id"), "record": r})
+
+    except FileNotFoundError:
+        return []
+    except Exception:
+        return []
+
+    return matches
+
+
+# 把新函数加入工具映射
+def run_recorder_search(query: str | None = None, patient_id: int | None = None, agent: object | None = None) -> dict:
+    """高层接口：先在本地检索匹配病历，将匹配结果注入到 agent 的 context 中，再让 agent 自主查找并返回结果。
+    :param query: 自然语言查询（例如“找所有关于咳嗽的记录”）
+    :param patient_id: 可选指定患者 ID，若提供则仅在该患者记录中检索
+    :param agent: 可选 RecorderAgent 实例，默认使用模块级 recoder_agent
+    """
+    ag = agent or recoder_agent
+
+    # 本地检索匹配病历
+    matches = search_medical_records(query, patient_id)
+    patient_info = None
+    if patient_id is not None:
+        patient_info = get_patient_info(int(patient_id))
+
+    # 构造 context：包含匹配到的病历和可选患者信息，供 agent 使用
+    context = {
+        "matched_records": matches,
+        "patient_info": patient_info,
+    }
+
+    return ag.run(query or "请基于以下病历查找并返回匹配结果", context)
+
+
+def call_recorder_search(query: str | None = None, patient_id: int | None = None, agent: object | None = None) -> dict:
+    """快速单次调用：与 `run_recorder_search` 类似，但使用短循环 `RecorderAgent.call`。"""
+    ag = agent or recoder_agent
+
+    matches = search_medical_records(query, patient_id)
+    patient_info = None
+    if patient_id is not None:
+        patient_info = get_patient_info(int(patient_id))
+
+    context = {
+        "matched_records": matches,
+        "patient_info": patient_info,
+    }
+
+    return ag.call(query or "请基于以下病历查找并返回匹配结果", context)
+
 SYSTEM_PROMPT = """# 基于人脸识别的智能病历系统 
 ## 任务说明
 你是一个智能病历系统的记录员，负责通过人脸识别技术识别患者，并为其创建和管理病历。
@@ -159,6 +238,9 @@ SYSTEM_PROMPT = """# 基于人脸识别的智能病历系统
 - 使用 add_medical_record 工具为患者添加新的病历信息。
 - 使用 get_patient_info 工具获取患者的完整信息。
 - 如果患者要求删除其信息，使用 delete_patient 工具。
+- 当上层调用者在 `context` 中注入 `matched_records`（匹配到的病历列表）时，优先使用这些记录作为检索语料，基于它们回答查询并给出结构化且简明的返回。
+    - `matched_records` 格式: [{"patient_id": <id>, "record": "..."}, ...]
+    - 如果提供 `patient_info`，可用于补充患者基本信息（姓名、id 等），但不要泄露敏感信息。
 ## 注意事项
 - 始终确保患者信息的隐私和安全。
 - 在使用任何工具前，确保理解其参数和返回值。
@@ -166,7 +248,7 @@ SYSTEM_PROMPT = """# 基于人脸识别的智能病历系统
 
 
 class RecorderAgent:
-    def __init__(self, model: str = general.DEFAULT_ONLINE_MODEL):
+    def __init__(self, model: str = general.ONLINE_CHAT_MODEL):
         self.model = model
         self._messages: list[dict] = []
 
@@ -238,7 +320,7 @@ def create_recorder_agent(model: str | None = None) -> RecorderAgent:
     创建并返回一个新的 `RecorderAgent` 实例。
     :param model: 可选模型名称，默认为配置中的 `DEFAULT_ONLINE_MODEL`
     """
-    return RecorderAgent(model or general.DEFAULT_ONLINE_MODEL)
+    return RecorderAgent(model or general.ONLINE_CHAT_MODEL)
 
 
 def run_recorder_agent(query: str, context: dict | None = None, max_iterations: int = 10, agent: RecorderAgent | None = None) -> dict:
