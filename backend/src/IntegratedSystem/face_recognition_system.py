@@ -13,8 +13,11 @@ import pickle
 import time
 from pathlib import Path
 
+from src.config.general import BACKEND_ROOT_DIR
+
 
 class FaceRecognitionSystem:
+
     def __init__(self, data_file="face_data.pkl"):
         """初始化人脸识别系统"""
         self.data_file = data_file
@@ -22,6 +25,7 @@ class FaceRecognitionSystem:
         self.known_names = []
         self._load_data()
     
+
     def _load_data(self):
         """加载已录入的人脸数据"""
         if Path(self.data_file).exists():
@@ -30,6 +34,7 @@ class FaceRecognitionSystem:
                 self.known_encodings = data.get('encodings', [])
                 self.known_names = data.get('names', [])
     
+
     def _append_data(self, encoding, name, patient_id):
         """追加新人脸数据到文件末尾"""
         # 重新加载以获取最新数据
@@ -44,6 +49,7 @@ class FaceRecognitionSystem:
                 'names': self.known_names
             }, f)
     
+
     def _get_next_id(self):
         """获取下一个可用的ID"""
         if not self.known_names:
@@ -52,6 +58,7 @@ class FaceRecognitionSystem:
         existing_ids = [item['id'] for item in self.known_names]
         return max(existing_ids) + 1
     
+
     def enroll_face_realtime(self, name, image_path: str | None = None):
         """
         从静态图片录入人脸：读取后端仓库中的图片进行识别并录入。
@@ -62,8 +69,7 @@ class FaceRecognitionSystem:
         :return: {"name": name, "id": id} 或 None
         """
         # 计算默认图片路径（backend/assets/face/face.png）
-        backend_root = Path(__file__).resolve().parents[2]
-        default_image = backend_root / "assets" / "face" / "face.png"
+        default_image = BACKEND_ROOT_DIR / "assets" / "face" / "face.png"
         img_path = Path(image_path) if image_path else default_image
 
         if not img_path.exists():
@@ -92,12 +98,13 @@ class FaceRecognitionSystem:
             print("人脸录入失败：无法计算人脸特征")
             return None
 
-        patient_id = self._get_next_id()
+        patient_id = self._get_next_id():
         self._append_data(face_encodings[0], name, patient_id)
         result = {"name": name, "id": patient_id}
         print(f"成功录入：{name}，ID：{patient_id}")
         return result
     
+
     def recognize_face_realtime(self, image_path: str | None = None):
         """
         从静态图片识别人脸并返回标签：读取 backend/assets/face/face.png（默认）
@@ -105,8 +112,7 @@ class FaceRecognitionSystem:
         :param image_path: 可选自定义图片路径
         :return: {"name": name, "id": id} 或 None
         """
-        backend_root = Path(__file__).resolve().parents[2]
-        default_image = backend_root / "assets" / "face" / "face.png"
+        default_image = BACKEND_ROOT_DIR / "assets" / "face" / "face.png"
         img_path = Path(image_path) if image_path else default_image
 
         if not img_path.exists():
@@ -136,6 +142,7 @@ class FaceRecognitionSystem:
         print("未识别到已录入人脸")
         return None
     
+
     def delete(self, patient_id):
         """
         删除指定ID的人脸数据
@@ -169,7 +176,7 @@ class FaceRecognitionSystem:
         
         print(f"已删除ID为 {patient_id} 的数据")
         return True
-
+    
 
 def main():
     """示例使用"""

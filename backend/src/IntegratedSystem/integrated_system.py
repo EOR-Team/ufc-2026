@@ -1,5 +1,14 @@
+"""
+IntegratedSystem/integrated_system.py
+集成人脸识别系统和病历管理系统的接口，提供统一的患者信息管理功能。
+"""
+
+import asyncio
+
 from face_recognition_system import FaceRecognitionSystem
 from medical_record_system import MedicalRecordSystem
+
+
 class IntegratedSystem:
     """集成人脸识别和病历管理的系统"""
     
@@ -7,6 +16,7 @@ class IntegratedSystem:
         self.face_system = FaceRecognitionSystem()
         self.medical_system = MedicalRecordSystem()
     
+
     def enroll_new_patient(self, name, image_path: str | None = None):
         """
         录入新患者（从静态图片录入人脸并创建病历）
@@ -25,6 +35,7 @@ class IntegratedSystem:
         
         return None
     
+
     def recognize_patient(self, image_path: str | None = None):
         """
         从静态图片识别患者（默认使用 `backend/assets/face/face.png`）
@@ -33,6 +44,7 @@ class IntegratedSystem:
         """
         return self.face_system.recognize_face_realtime(image_path)
     
+
     def add_medical_record(self, patient_id, medical_record):
         """
         为患者添加病历
@@ -42,6 +54,7 @@ class IntegratedSystem:
         """
         return self.medical_system.append_record(patient_id, medical_record)
     
+
     def get_patient_info(self, patient_id):
         """
         获取患者完整信息
@@ -50,6 +63,7 @@ class IntegratedSystem:
         """
         return self.medical_system.read(patient_id)
     
+
     def delete_patient(self, patient_id):
         """
         删除患者（同时删除人脸和病历）
@@ -59,6 +73,35 @@ class IntegratedSystem:
         face_deleted = self.face_system.delete(patient_id)
         medical_deleted = self.medical_system.delete(patient_id)
         return face_deleted and medical_deleted
+
+
+class AsyncIntegratedSystem(IntegratedSystem):
+    """
+    将CPU密集型的面部识别和IO密集型的病历管理操作异步化，以提高性能。
+    """
+
+    def __init__(self):
+        super().__init__()
+    
+
+    async def enroll_new_patient_async(self, name, image_path: str | None = None):
+        return await asyncio.to_thread(self.enroll_new_patient, name, image_path)
+    
+
+    async def recognize_patient_async(self, image_path: str | None = None):
+        return await asyncio.to_thread(self.recognize_patient, image_path)
+    
+
+    async def add_medical_record_async(self, patient_id, medical_record):
+        return await asyncio.to_thread(self.add_medical_record, patient_id, medical_record)
+    
+
+    async def get_patient_info_async(self, patient_id):
+        return await asyncio.to_thread(self.get_patient_info, patient_id)
+    
+
+    async def delete_patient_async(self, patient_id):
+        return await asyncio.to_thread(self.delete_patient, patient_id)
 
 
 def main():
