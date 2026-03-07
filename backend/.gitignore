@@ -7,12 +7,26 @@ TODO.md
 
 melo_test.wav
 
+# Temporary test scripts
+test_*.py
+fix_*.py
+diagnose_*.py
+
+# Test audio directories
+test_audio*/
+
 # Binary model files
 sherpa-onnx-streaming-paraformer-bilingual-zh-en.tar.bz2
 model/
 
 # LLM model files
 *.gguf
+
+# Temporary files and databases
+*.db
+*.onnx
+*.onnx.json
+*.tar.bz2
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
