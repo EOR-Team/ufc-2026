@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 
 from src.smart_triager.car.typedef import CarAction, CarCommandsOutput
 from src.car_control import execute_car_action, execute_car_actions_sequence, CarControlResponse
+from src.hardware import Robot as _HardwareRobot, HARDWARE_AVAILABLE
 from src.logger import info, warning, error
 
 # Vision modules for position verification (Phase 2: mock implementations)
@@ -504,7 +505,10 @@ async def get_navigation_status(
         return JSONResponse(
             content={
                 "success": True,
-                "data": status_response.model_dump()
+                "data": {
+                    **status_response.model_dump(),
+                    "hardware_available": HARDWARE_AVAILABLE,
+                }
             },
             status_code=200
         )
@@ -576,12 +580,18 @@ async def pause_navigation(
     try:
         navigation_state.pause_navigation(car_id)
 
+        # 立即停车（硬件急停）
+        if HARDWARE_AVAILABLE and _HardwareRobot is not None:
+            _HardwareRobot._bot.t_stop()
+            info(f"[Navigation] Hardware stopped for pause: {car_id}")
+
         return JSONResponse(
             content={
                 "success": True,
                 "data": {
                     "message": "Navigation paused",
-                    "car_id": car_id
+                    "car_id": car_id,
+                    "hardware_stopped": HARDWARE_AVAILABLE,
                 }
             },
             status_code=200
@@ -640,12 +650,18 @@ async def stop_navigation(
     try:
         navigation_state.stop_navigation(car_id)
 
+        # 立即停车（硬件急停）
+        if HARDWARE_AVAILABLE and _HardwareRobot is not None:
+            _HardwareRobot._bot.t_stop()
+            info(f"[Navigation] Hardware stopped for stop: {car_id}")
+
         return JSONResponse(
             content={
                 "success": True,
                 "data": {
                     "message": "Navigation stopped",
-                    "car_id": car_id
+                    "car_id": car_id,
+                    "hardware_stopped": HARDWARE_AVAILABLE,
                 }
             },
             status_code=200

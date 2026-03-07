@@ -24,10 +24,10 @@ class CarAction(BaseModel):
         ...,
         description="转向方向（left/right/straight）"
     )
-    distance: int = Field(
+    distance: float = Field(
         ...,
-        description="转向后的移动距离，应避免为0",
-        ge=0  # 距离非负
+        description="转向后的移动距离（米），应避免为0",
+        ge=0.0  # 距离非负
     )
 
 

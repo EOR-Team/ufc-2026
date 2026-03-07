@@ -1,12 +1,23 @@
 # car_control.py
 # 小车控制模块，实现基础的小车控制功能
-# 注意：当前为留空实现，仅记录日志，实际硬件集成需根据具体硬件平台实现
+# 通过 LOBOROBOT.Robot 单例驱动真实硬件
 
 import asyncio
 from typing import Optional
 from pydantic import BaseModel, Field
 from src.logger import info, warning, error, debug
 from src.smart_triager.car.typedef import CarAction, Orientation
+
+# 1 个地图格子单位对应的真实物理距离（米），实测标定值
+UNIT_TO_METERS: float = 0.185
+
+# 尝试导入真实硬件驱动；若不在树莓派上则降级为纯日志模式
+try:
+    from src.hardware import Robot as _Robot, HARDWARE_AVAILABLE as _HARDWARE_AVAILABLE
+except Exception as _e:
+    _Robot = None  # type: ignore
+    _HARDWARE_AVAILABLE = False
+    info(f"[CarControl] 硬件包导入失败，使用模拟模式: {_e}")
 
 
 class CarController:
@@ -25,70 +36,61 @@ class CarController:
         self.car_id = car_id
         info(f"CarController initialized for car: {car_id}")
 
-    async def forward(self, distance: int) -> bool:
+    async def forward(self, distance: float) -> bool:
         """
-        控制小车前进指定距离
-
-        Args:
-            distance: 前进距离（单位：像素/单位）
-
-        Returns:
-            bool: 执行是否成功（当前总是返回True）
+        控制小车前进指定距离（格子单位，内部自动换算为米）
         """
-        info(f"[{self.car_id}] Forward command executed: distance={distance}")
-        # 留空实现：记录日志并模拟短暂延迟
-        await asyncio.sleep(0.1)  # 模拟硬件执行时间
+        meters = distance * UNIT_TO_METERS
+        info(f"[{self.car_id}] Forward: {distance} units = {meters:.3f}m")
+        if _HARDWARE_AVAILABLE:
+            await _Robot.forward(meters)
+        else:
+            await asyncio.sleep(0.1)  # 模拟
         return True
 
-    async def backward(self, distance: int) -> bool:
+    async def backward(self, distance: float) -> bool:
         """
-        控制小车后退指定距离
-
-        Args:
-            distance: 后退距离（单位：像素/单位）
-
-        Returns:
-            bool: 执行是否成功（当前总是返回True）
+        控制小车后退指定距离（格子单位，内部自动换算为米）
         """
-        info(f"[{self.car_id}] Backward command executed: distance={distance}")
-        # 留空实现：记录日志并模拟短暂延迟
-        await asyncio.sleep(0.1)  # 模拟硬件执行时间
+        meters = distance * UNIT_TO_METERS
+        info(f"[{self.car_id}] Backward: {distance} units = {meters:.3f}m")
+        if _HARDWARE_AVAILABLE:
+            await _Robot.backward(meters)
+        else:
+            await asyncio.sleep(0.1)  # 模拟
         return True
 
     async def left(self) -> bool:
         """
         控制小车左转90度
-
-        Returns:
-            bool: 执行是否成功（当前总是返回True）
         """
-        info(f"[{self.car_id}] Left turn command executed")
-        # 留空实现：记录日志并模拟短暂延迟
-        await asyncio.sleep(0.1)  # 模拟硬件执行时间
+        info(f"[{self.car_id}] Turn left 90°")
+        if _HARDWARE_AVAILABLE:
+            await _Robot.turn_left(90)
+        else:
+            await asyncio.sleep(0.1)  # 模拟
         return True
 
     async def right(self) -> bool:
         """
         控制小车右转90度
-
-        Returns:
-            bool: 执行是否成功（当前总是返回True）
         """
-        info(f"[{self.car_id}] Right turn command executed")
-        # 留空实现：记录日志并模拟短暂延迟
-        await asyncio.sleep(0.1)  # 模拟硬件执行时间
+        info(f"[{self.car_id}] Turn right 90°")
+        if _HARDWARE_AVAILABLE:
+            await _Robot.turn_right(90)
+        else:
+            await asyncio.sleep(0.1)  # 模拟
         return True
 
     async def stop(self) -> bool:
         """
         控制小车停止
-
-        Returns:
-            bool: 执行是否成功（当前总是返回True）
         """
-        info(f"[{self.car_id}] Stop command executed")
-        # 留空实现：记录日志并模拟短暂延迟
-        await asyncio.sleep(0.05)  # 模拟硬件执行时间
+        info(f"[{self.car_id}] Stop")
+        if _HARDWARE_AVAILABLE:
+            _Robot._bot.t_stop()
+        else:
+            await asyncio.sleep(0.05)  # 模拟
         return True
 
     async def execute_action(self, action: CarAction) -> bool:
@@ -107,7 +109,7 @@ class CarController:
         if action.distance < 0:
             raise ValueError(f"Invalid distance: {action.distance}, must be >= 0")
 
-        info(f"[{self.car_id}] Executing CarAction: orientation={action.orientation}, distance={action.distance}")
+        info(f"[{self.car_id}] Executing CarAction: orientation={action.orientation}, distance={action.distance:.3f}m")
 
         # 执行转向（如果需要）
         if action.orientation == Orientation.left:

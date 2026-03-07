@@ -53,7 +53,7 @@ def expand_main_route_to_full_path(
     return full_path
 
 
-def get_absolute_direction(dx: int, dy: int) -> str:
+def get_absolute_direction(dx: float, dy: float) -> str:
     """
     根据坐标差计算绝对方向
 
@@ -172,7 +172,7 @@ def parse_route_to_commands(
 
     # 2. 计算绝对方向序列和距离
     directions: list[str] = []
-    distances: list[int] = []
+    distances: list[float] = []
 
     for i in range(len(full_path) - 1):
         node_id1 = full_path[i]
@@ -184,11 +184,11 @@ def parse_route_to_commands(
         if not node1 or not node2:
             raise ValueError(f"Node not found: {node_id1} or {node_id2}")
 
-        dx = int(node2.x - node1.x)  # 坐标转换为整数
-        dy = int(node2.y - node1.y)
+        dx = node2.x - node1.x  # 坐标差（米）
+        dy = node2.y - node1.y
 
         direction = get_absolute_direction(dx, dy)
-        distance = abs(dx) + abs(dy)  # 曼哈顿距离
+        distance = abs(dx) + abs(dy)  # 曼哈顿距离（米）
 
         directions.append(direction)
         distances.append(distance)
