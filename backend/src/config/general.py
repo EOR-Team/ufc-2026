@@ -37,8 +37,8 @@ ONLINE_MODEL_HOST = "https://api.deepseek.com/v1"
 
 # === 视觉模型 ===
 
-VISION_MODEL_DIR = BACKEND_ROOT_DIR / "model"
-BLACK_BOX_SEGMENTATION_MODEL_PATH = VISION_MODEL_DIR / "deeplabv3_mnv2_pascal_quant.tflite"
+VISION_MODEL_DIR = BACKEND_ROOT_DIR / "src" / "model"
+BLACK_BOX_SEGMENTATION_MODEL_PATH = VISION_MODEL_DIR / "yolov5s.onnx"
 
 # ========== 图配置 ============
 

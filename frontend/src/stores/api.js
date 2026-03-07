@@ -497,6 +497,28 @@ export const useApiStore = defineStore('api', () => {
   }
 
   /**
+   * Get medical suggestion from backend
+   * @param {string} symptoms - User's symptoms / message
+   * @param {string|null} [diagnosis] - Doctor's diagnosis (optional)
+   * @param {boolean} [onlineModel] - Whether to use online model
+   * @returns {Promise<ApiResponse>} API response with { response, scenario, requires_doctor_consultation }
+   */
+  const getMedicalSuggestion = async (symptoms, diagnosis = null, onlineModel = onlineModelEnabled.value) => {
+    log('Getting medical suggestion:', { symptoms, diagnosis, onlineModel })
+
+    const params = new URLSearchParams()
+    params.append('symptoms', symptoms)
+    if (diagnosis !== null && diagnosis !== '') {
+      params.append('diagnosis', diagnosis)
+    }
+    params.append('online_model', String(onlineModel))
+
+    return await request(`/medical/suggest?${params.toString()}`, {
+      method: 'GET'
+    })
+  }
+
+  /**
    * Clear error state
    */
   const clearError = () => {
@@ -535,6 +557,7 @@ export const useApiStore = defineStore('api', () => {
     getMap,
     speechToText,
     tts,
+    getMedicalSuggestion,
     clearError,
     // Navigation methods
     executeCarCommand,

@@ -3,6 +3,7 @@ router/medical.py
 医疗建议功能路由
 """
 
+from typing import Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -17,14 +18,14 @@ class MedicalSuggestionRequest(BaseModel):
     """医疗建议请求体"""
     
     symptoms: str = Field(..., description="用户最近的症状")
-    diagnosis: str = Field(..., description="医生给予用户的诊断结果")
+    diagnosis: Optional[str] = Field(default=None, description="医生给予用户的诊断结果（可选）")
     online_model: bool = Field(default=False, description="是否使用在线模型（默认离线模式）")
 
 
 @medical_router.get("/suggest")
 async def get_medical_suggestion_api(
     symptoms: str,
-    diagnosis: str,
+    diagnosis: Optional[str] = None,
     online_model: bool = False
 ):
     """

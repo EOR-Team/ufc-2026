@@ -20,7 +20,7 @@ class MedicalResponse(BaseModel):
     requires_doctor_consultation: bool = False
 
 
-def _identify_scenario(symptoms: str, diagnosis: str) -> Tuple[str, bool]:
+def _identify_scenario(symptoms: str, diagnosis: Optional[str] = None) -> Tuple[str, bool]:
     """
     识别场景类型和安全边界检查
     返回：(场景类型, 是否需要医生咨询)
@@ -29,7 +29,7 @@ def _identify_scenario(symptoms: str, diagnosis: str) -> Tuple[str, bool]:
     medication_keywords = ["服药", "用药", "剂量", "一次", "两次", "三次", "吃药", "药量"]
     dangerous_keywords = ["改剂量", "减量", "增量", "停药", "自行调整", "减少用药", "增加用药"]
     
-    text = f"{symptoms} {diagnosis}".lower()
+    text = f"{symptoms} {diagnosis or ''}".lower()
     
     # 检查是否需要医生咨询（安全边界）
     requires_doctor = any(keyword in text for keyword in dangerous_keywords)
@@ -75,7 +75,7 @@ def _extract_medication_info(text: str) -> dict:
     return info
 
 
-def _generate_template_response(scenario: str, symptoms: str, diagnosis: str, requires_doctor: bool) -> str:
+def _generate_template_response(scenario: str, symptoms: str, diagnosis: Optional[str], requires_doctor: bool) -> str:
     """生成模板化回复"""
     
     if requires_doctor:
@@ -145,11 +145,12 @@ def _generate_template_response(scenario: str, symptoms: str, diagnosis: str, re
 祝您早日康复！"""
     
     elif scenario == "symptom_interpretation":
+        diagnosis_text = diagnosis or "暂无诊断信息"
         return f"""根据您的症状描述和诊断结果：
 
 **症状分析**：{symptoms}
 
-**诊断说明**：{diagnosis}
+**诊断说明**：{diagnosis_text}
 
 **理解建议**：
 1. 诊断结果反映了您当前的健康状况
@@ -163,10 +164,11 @@ def _generate_template_response(scenario: str, symptoms: str, diagnosis: str, re
 • 保持与医生的良好沟通"""
     
     else:  # general_advice
+        diagnosis_text = diagnosis or "暂无诊断信息"
         return f"""感谢您的咨询。根据您提供的信息：
 
 **症状**：{symptoms}
-**诊断**：{diagnosis}
+**诊断**：{diagnosis_text}
 
 **一般性建议**：
 1. 严格遵循医生的治疗方案
@@ -178,15 +180,16 @@ def _generate_template_response(scenario: str, symptoms: str, diagnosis: str, re
 **重要原则**：健康问题请以专业医生意见为准，本建议仅供参考。"""
 
 
-async def get_medical_response_online(symptoms: str, diagnosis: str) -> Optional[MedicalResponse]:
+async def get_medical_response_online(symptoms: str, diagnosis: Optional[str] = None) -> Optional[MedicalResponse]:
     """使用在线模型获取医疗回复"""
     try:
         client = get_online_client()
         
+        diagnosis_line = f"医生诊断：{diagnosis}" if diagnosis else "医生诊断：暂无"
         prompt = f"""你是专业的医疗助手，请根据患者的症状和诊断结果，提供个性化、简洁易读的医疗建议。
 
 患者症状：{symptoms}
-医生诊断：{diagnosis}
+{diagnosis_line}
 
 要求：
 1. 回复要严谨准确，避免给出可能有害的建议
@@ -219,7 +222,7 @@ async def get_medical_response_online(symptoms: str, diagnosis: str) -> Optional
         return None
 
 
-def get_medical_response_offline(symptoms: str, diagnosis: str) -> MedicalResponse:
+def get_medical_response_offline(symptoms: str, diagnosis: Optional[str] = None) -> MedicalResponse:
     """离线模式：基于模板生成回复"""
     scenario, requires_doctor = _identify_scenario(symptoms, diagnosis)
     response = _generate_template_response(scenario, symptoms, diagnosis, requires_doctor)
@@ -231,7 +234,7 @@ def get_medical_response_offline(symptoms: str, diagnosis: str) -> MedicalRespon
     )
 
 
-async def get_medical_response(symptoms: str, diagnosis: str, online_model: bool = False) -> Optional[MedicalResponse]:
+async def get_medical_response(symptoms: str, diagnosis: Optional[str] = None, online_model: bool = False) -> Optional[MedicalResponse]:
     """主接口：获取医疗回复（默认使用离线模式以优化性能）"""
     if online_model:
         return await get_medical_response_online(symptoms, diagnosis)

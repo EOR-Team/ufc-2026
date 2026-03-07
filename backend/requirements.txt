@@ -29,5 +29,11 @@ opencv-python
 face_recognition
 numpy
 
+# ONNX runtime (for YOLOv5s inference)
+onnxruntime
+
+# OCR
+easyocr
+
 # Performance monitoring
 psutil>=5.9.0
