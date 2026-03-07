@@ -24,6 +24,9 @@ if [ "$ARCH" = "aarch64" ]; then
         # dlib 编译需要的 boost
         sudo apt-get install -y libboost-all-dev
 
+        # 树莓派 GPIO 与 I2C 支持
+        sudo apt-get install -y python3-smbus i2c-tools python3-rpi.gpio
+
         print_success "ARM64 系统依赖安装完成。"
     else
         print_warning "未检测到 apt 包管理器，请确保系统中已安装构建工具链及 OpenBLAS。"

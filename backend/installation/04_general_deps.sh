@@ -34,6 +34,14 @@ print_success "常规依赖安装完成。"
 echo "安装基础系统包..."
 "$VENV_PYTHON" -m pip install "psutil>=5.9.0"
 
+# ==========================================
+# 树莓派硬件控制包（GPIO / I2C）
+# 仅在 ARM 平台上实际可用，其他平台安装不会报错
+# ==========================================
+echo "安装树莓派硬件控制依赖 (RPi.GPIO, smbus2)..."
+"$VENV_PYTHON" -m pip install RPi.GPIO smbus2
+print_success "RPi.GPIO / smbus2 安装完成。"
+
 rm -f "$TMP_REQ"
 
 print_success "阶段 4 完成。"
