@@ -1,8 +1,8 @@
 <template>
   <Transition name="slide-up">
-    <div v-if="visible" class="navigation-panel fixed bottom-6 right-6 z-40">
+    <div v-if="visible" class="navigation-panel absolute inset-x-4 top-1/2 -translate-y-1/2 z-40">
       <!-- 浮动面板容器 -->
-      <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-80 overflow-hidden">
+      <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full overflow-hidden">
 
         <!-- 面板标题栏 -->
         <div class="flex items-center justify-between px-4 py-3 bg-primary/5 border-b border-slate-200">
@@ -20,10 +20,10 @@
         </div>
 
         <!-- 面板内容区域 -->
-        <div class="p-4 space-y-4">
+        <div class="px-4 pt-3 pb-4" style="display: flex; flex-direction: column; gap: 20px;">
 
           <!-- 进度指示器 -->
-          <div v-if="showProgress" class="space-y-2">
+          <div v-if="showProgress" class="space-y-3">
             <div class="flex items-center justify-between text-sm">
               <span class="text-slate-600">进度</span>
               <span class="font-medium text-primary">
@@ -39,7 +39,7 @@
           </div>
 
           <!-- 当前指令显示 -->
-          <div v-if="currentAction" class="bg-slate-50 rounded-lg p-3 border border-slate-200">
+          <div v-if="currentAction" class="bg-slate-50 rounded-lg">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary text-base">
@@ -59,8 +59,8 @@
             <!-- 下一步按钮 -->
             <button
               @click="handleNextCommand"
-              :disabled="isNextDisabled || isPaused"
-              class="flex items-center justify-center gap-2 py-3 px-4 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              :disabled="isNextDisabled"
+              class="flex items-center justify-center gap-2 py-1 px-2 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <span class="material-symbols-outlined text-base">arrow_forward</span>
               <span>下一步</span>
@@ -69,44 +69,12 @@
             <!-- 检查位置按钮 -->
             <button
               @click="handleVerifyPosition"
-              :disabled="isPaused"
-              class="flex items-center justify-center gap-2 py-3 px-4 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="flex items-center justify-center gap-2 py-1 px-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <span class="material-symbols-outlined text-base">check_circle</span>
               <span>检查位置</span>
             </button>
-
-            <!-- 暂停/继续按钮 -->
-            <button
-              @click="handleTogglePause"
-              :class="isPaused ? 'bg-amber-500 hover:bg-amber-600' : 'bg-amber-600 hover:bg-amber-700'"
-              class="col-span-2 flex items-center justify-center gap-2 py-3 px-4 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <span class="material-symbols-outlined text-base">
-                {{ isPaused ? 'play_arrow' : 'pause' }}
-              </span>
-              <span>{{ isPaused ? '继续导航' : '暂停导航' }}</span>
-            </button>
-
-            <!-- 上传图片验证按钮（备用方案） -->
-            <button
-              @click="handleUploadImage"
-              :disabled="isPaused"
-              class="col-span-2 flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <span class="material-symbols-outlined text-base">photo_camera</span>
-              <span>上传图片验证</span>
-            </button>
           </div>
-
-          <!-- 隐藏的文件输入元素 -->
-          <input
-            type="file"
-            ref="fileInput"
-            class="hidden"
-            accept="image/*"
-            @change="handleFileSelected"
-          />
 
           <!-- 状态信息 -->
           <div v-if="statusMessage" class="text-center text-sm" :class="statusMessageClass">
