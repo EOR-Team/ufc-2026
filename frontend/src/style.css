@@ -3,11 +3,11 @@
 @theme {
   --color-primary: #4252b3;
   --color-background-light: #f6f6f8;
-  --font-display: "Inter", sans-serif;
+  --font-display: "Inter Variable", "Inter", sans-serif;
 }
 
 :root {
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: "Inter Variable", "Inter", system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
