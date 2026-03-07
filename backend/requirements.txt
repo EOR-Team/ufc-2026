@@ -20,7 +20,8 @@ pydantic
 sherpa-onnx
 soundfile
 python-multipart
-./melotts-0.1.2-py3-none-any.whl
+piper-tts>=1.0.0
+onnxruntime
 pydub
 python-magic
 
